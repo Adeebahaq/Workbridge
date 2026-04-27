@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Urdu / RTL mode ── */
+html.urdu-mode,
+html.urdu-mode body {
+  font-family: 'Noto Nastaliq Urdu', serif;
+}
+
+html.urdu-mode p,
+html.urdu-mode span,
+html.urdu-mode div,
+html.urdu-mode button,
+html.urdu-mode label,
+html.urdu-mode a,
+html.urdu-mode h1,
+html.urdu-mode h2,
+html.urdu-mode h3 {
+  font-family: 'Noto Nastaliq Urdu', serif;
+  line-height: 2.2;
+}
+
+html.urdu-mode svg {
+  font-family: initial;
+}
