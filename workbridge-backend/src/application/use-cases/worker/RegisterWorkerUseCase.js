@@ -85,13 +85,14 @@ class RegisterWorkerUseCase {
 
     // 8. Create User
     const passwordHash = await hashPassword(trimmed.password);
-    const user = await this.userRepository.save({
-      role:            "worker",
-      fullName:        trimmed.fullName,
-      phone:           trimmed.phone,
-      passwordHash,
-      isPhoneVerified: isAdminCreated ? true : false,
-    });
+const user = await this.userRepository.save({
+  role:               "worker",
+  fullName:           trimmed.fullName,
+  phone:              trimmed.phone,
+  passwordHash,
+  isWhatsappVerified: isAdminCreated ? true : false,  // ← use existing field
+  createdByAdmin:     isAdminCreated ? true : false,  // ← also fix this
+});
 
     // 9. Create WorkerProfile
     await this.workerRepository.save({

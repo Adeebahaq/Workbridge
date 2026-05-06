@@ -16,7 +16,8 @@ class LoginUseCase {
     const match = await comparePassword(password, user.passwordHash);
     if (!match) throw new AppError("Invalid phone or password", 401);
 
-    if (!user.isWhatsappVerified && user.role !== "admin") {
+    
+if (!user.isWhatsappVerified && !user.isPhoneVerified && user.role !== "admin") {
       throw new AppError("Phone not verified. Please verify via OTP first.", 403);
     }
 
