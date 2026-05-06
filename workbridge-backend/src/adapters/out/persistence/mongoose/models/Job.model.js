@@ -17,6 +17,7 @@ const JobSchema = new mongoose.Schema(
     jobDate:    { type: Date,   required: true },
     startDate:  { type: Date },
     endDate:    { type: Date },
+    quantity:      { type: Number, min: 1 },   // ← NEW: hours for Hourly, days for Daily
     description:   { type: String, maxlength: 300 },
     estimatedCost: { type: Number, min: 0 },
     status: { type: String, required: true, default: "Requested",

@@ -28,14 +28,15 @@ export default function Sidebar() {
       ],
     },
     employer: {
-      labelKey: "sidebar.employer_portal",
-      links: [
-        { labelKey: "sidebar.dashboard_link", icon: "⊞",  to: "/employer/workers" },
-        { labelKey: "sidebar.jobs",           icon: "🗂",  to: "/employer/jobs" },
-        { labelKey: "sidebar.messages",       icon: "💬",  to: "/employer/messages" },
-        { labelKey: "sidebar.notifications",  icon: "🔔",  to: "/employer/notifications" },
-      ],
-    },
+  labelKey: "sidebar.employer_portal",
+  links: [
+    { labelKey: "sidebar.dashboard_link", icon: "⊞",  to: "/employer/dashboard" },
+    { labelKey: "sidebar.find_workers",   icon: "🔍",  to: "/employer/workers" },
+    { labelKey: "sidebar.jobs",           icon: "🗂",  to: "/employer/jobs" },
+    { labelKey: "sidebar.messages",       icon: "💬",  to: "/employer/chat" },
+    { labelKey: "sidebar.notifications",  icon: "🔔",  to: "/employer/notifications" },
+  ],
+},
     admin: {
       labelKey: "sidebar.admin_panel",
       links: [

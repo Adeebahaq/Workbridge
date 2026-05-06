@@ -4,24 +4,37 @@ const User              = require("../models/User.model");
 const mongoose          = require("mongoose");
 
 class MongoWorkerRepository extends IWorkerRepository {
+
   async findById(userId) {
     return WorkerProfile.findOne({ userId })
       .populate("userId")
       .populate("services", "name")
       .lean();
   }
+
+  // ← THIS IS THE MISSING METHOD — fixes "findByUserId is not a function"
+  async findByUserId(userId) {
+    return WorkerProfile.findOne({ userId })
+      .populate("services", "name")
+      .populate("userId", "fullName phone email")
+      .lean();
+  }
+
   async findByPhone(phone) {
     const user = await User.findOne({ phone, role: "worker" }).lean();
     if (!user) return null;
     return WorkerProfile.findOne({ userId: user._id }).populate("userId").lean();
   }
+
   async findByCnic(cnicNumber) {
     return WorkerProfile.findOne({ cnicNumber }).lean();
   }
+
   async save(workerData) {
     const profile = new WorkerProfile(workerData);
     return profile.save();
   }
+
   async update(id, updates) {
     if (mongoose.Types.ObjectId.isValid(id)) {
       const byProfileId = await WorkerProfile.findByIdAndUpdate(
@@ -37,6 +50,7 @@ class MongoWorkerRepository extends IWorkerRepository {
       { new: true }
     ).lean();
   }
+
   async search(filters) {
     const query = { status: "Active" };
     if (filters.serviceId)             query.services              = filters.serviceId;
@@ -52,6 +66,7 @@ class MongoWorkerRepository extends IWorkerRepository {
       .sort({ averageRating: -1 })
       .lean();
   }
+
   async listAll(filters = {}) {
     const query = {};
     if (filters.status)        query.status        = filters.status;
@@ -62,9 +77,13 @@ class MongoWorkerRepository extends IWorkerRepository {
       .sort({ submittedAt: -1 })
       .lean();
   }
+
   async findPendingVerification() {
-    return WorkerProfile.find({ status: "Pending Verification" }).sort({ submittedAt: 1 }).lean();
+    return WorkerProfile.find({ status: "Pending Verification" })
+      .sort({ submittedAt: 1 })
+      .lean();
   }
+
   async findExpiredCnics() {
     return WorkerProfile.find({ cnicExpiryDate: { $lte: new Date() }, status: "Active" }).lean();
   }

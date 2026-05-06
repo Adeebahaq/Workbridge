@@ -2,6 +2,120 @@ import React, { useState, useEffect } from "react";
 import { useWorkerSearch } from "../../hooks/useWorkerSearch";
 import api from "../../services/api";
 
+// ── Cost calculation engine ──────────────────────────────────────────────────
+function calcCascadingCost(startDate, endDate, pricing) {
+  if (!startDate || !endDate) return null;
+  const s = new Date(startDate);
+  const e = new Date(endDate);
+  if (e <= s) return null;
+
+  // +1 = start day inclusive
+  const totalDays = Math.ceil((e - s) / (24 * 3600 * 1000)) + 1;
+
+  const monthRate = Number(pricing.monthlyRate) || 0;
+  const weekRate  = Number(pricing.weeklyRate)  || 0;
+  const dayRate   = Number(pricing.dailyRate)   || 0;
+
+  let remaining = totalDays;
+  const breakdown = [];
+
+  if (monthRate > 0 && remaining >= 30) {
+    const months = Math.floor(remaining / 30);
+    breakdown.push({ label: `${months} month${months>1?"s":""}`, qty: months, rate: monthRate, unit: "mo", cost: months * monthRate });
+    remaining -= months * 30;
+  }
+  if (weekRate > 0 && remaining >= 7) {
+    const weeks = Math.floor(remaining / 7);
+    breakdown.push({ label: `${weeks} week${weeks>1?"s":""}`, qty: weeks, rate: weekRate, unit: "wk", cost: weeks * weekRate });
+    remaining -= weeks * 7;
+  }
+  if (dayRate > 0 && remaining > 0) {
+    breakdown.push({ label: `${remaining} day${remaining>1?"s":""}`, qty: remaining, rate: dayRate, unit: "day", cost: remaining * dayRate });
+    remaining = 0;
+  }
+
+  if (breakdown.length === 0) return null;
+  const total = breakdown.reduce((sum, b) => sum + b.cost, 0);
+  return { breakdown, total, totalDays, uncovered: remaining };
+}
+
+// Add min days to a date string → returns "YYYY-MM-DD"
+function addDays(dateStr, days) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+// ── Cost Breakdown Card ──────────────────────────────────────────────────────
+function CostBreakdown({ breakdown, total, totalDays, uncovered, label }) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+        Cost Breakdown{totalDays ? ` — ${totalDays} ${label || "days"} total` : ""}
+      </p>
+      <div className="space-y-1.5">
+        {breakdown.map((b, i) => (
+          <div key={i} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${i===0?"bg-teal-500":i===1?"bg-blue-400":"bg-amber-400"}`}/>
+              <span className="text-slate-600 font-semibold">{b.label}</span>
+              <span className="text-slate-400">@ PKR {Number(b.rate).toLocaleString()}/{b.unit}</span>
+            </div>
+            <span className="font-black text-slate-800">PKR {b.cost.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-slate-200 pt-2 flex justify-between text-sm font-black">
+        <span className="text-slate-700">Total Estimate</span>
+        <span className="text-teal-600">PKR {total.toLocaleString()}</span>
+      </div>
+      {uncovered > 0 && (
+        <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+          ⚠ {uncovered} day{uncovered>1?"s":""} not priced — worker missing some rate types
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Dark Summary Card ────────────────────────────────────────────────────────
+function DarkCostCard({ hiringType, breakdown, total }) {
+  return (
+    <div className="bg-[#0F172A] rounded-xl p-4">
+      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Estimated Cost</p>
+      <p className="text-white font-black text-2xl mt-1">PKR {total.toLocaleString()}</p>
+      <p className="text-slate-400 text-xs">{breakdown.map(b=>b.label).join(" + ")}</p>
+      <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-800 text-xs">
+        <div>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1.5">⊙ SUMMARY</p>
+          <div className="space-y-1">
+            {breakdown.map((b,i)=>(
+              <div key={i} className="flex justify-between">
+                <span className="text-slate-400">{b.label}</span>
+                <span className="text-white font-semibold">PKR {b.cost.toLocaleString()}</span>
+              </div>
+            ))}
+            <div className="flex justify-between border-t border-slate-700 pt-1 mt-1">
+              <span className="text-slate-300 font-bold">Total</span>
+              <span className="text-teal-400 font-black">PKR {total.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1.5">⊙ HOW IT WORKS</p>
+          <ol className="space-y-0.5 text-slate-400">
+            <li>1. Request is sent</li>
+            <li>2. Worker reviews it</li>
+            <li>3. 24h to respond</li>
+            <li>4. Job starts on date</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Worker Profile Modal ─────────────────────────────────────────────────────
 function WorkerProfileModal({ worker, onClose, onHire }) {
   const [tab, setTab] = useState("about");
@@ -14,7 +128,6 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex" onClick={e=>e.stopPropagation()}>
-        {/* Left dark panel */}
         <div className="w-56 shrink-0 bg-[#0F172A] flex flex-col p-5 gap-3 overflow-y-auto">
           <div className="w-14 h-14 rounded-2xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black text-xl">{initials}</div>
           <div>
@@ -39,12 +152,13 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
           {worker.cnicFrontImage&&(
             <span className="text-[10px] font-bold bg-teal-500/20 text-teal-400 border border-teal-500/30 px-2 py-1 rounded-lg">✓ CNIC VERIFIED</span>
           )}
-          {(pricing.hourlyRate||pricing.dailyRate||pricing.monthlyRate)&&(
+          {(pricing.hourlyRate||pricing.dailyRate||pricing.weeklyRate||pricing.monthlyRate)&&(
             <div className="border-t border-slate-800 pt-3 space-y-1">
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">$ SERVICE RATES</p>
-              {pricing.hourlyRate&&<div className="flex justify-between text-xs"><span className="text-slate-400">Hourly</span><span className="text-white">PKR {pricing.hourlyRate}/hr</span></div>}
-              {pricing.dailyRate&&<div className="flex justify-between text-xs"><span className="text-slate-400">Daily</span><span className="text-white">PKR {pricing.dailyRate}/day</span></div>}
-              {pricing.monthlyRate&&<div className="flex justify-between text-xs"><span className="text-slate-400">Monthly</span><span className="text-white">PKR {pricing.monthlyRate}/mo</span></div>}
+              {pricing.hourlyRate  && <div className="flex justify-between text-xs"><span className="text-slate-400">Hourly</span><span className="text-white">PKR {Number(pricing.hourlyRate).toLocaleString()}/hr</span></div>}
+              {pricing.dailyRate   && <div className="flex justify-between text-xs"><span className="text-slate-400">Daily</span><span className="text-white">PKR {Number(pricing.dailyRate).toLocaleString()}/day</span></div>}
+              {pricing.weeklyRate  && <div className="flex justify-between text-xs"><span className="text-slate-400">Weekly</span><span className="text-white">PKR {Number(pricing.weeklyRate).toLocaleString()}/wk</span></div>}
+              {pricing.monthlyRate && <div className="flex justify-between text-xs"><span className="text-slate-400">Monthly</span><span className="text-white">PKR {Number(pricing.monthlyRate).toLocaleString()}/mo</span></div>}
             </div>
           )}
           <button onClick={()=>onHire(worker)} className="mt-auto w-full bg-teal-500 hover:bg-teal-400 text-white font-black py-2.5 rounded-xl text-sm transition-all">
@@ -52,7 +166,6 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
           </button>
         </div>
 
-        {/* Right panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex border-b border-slate-100 sticky top-0 bg-white z-10">
             {["about","reviews"].map(t=>(
@@ -73,7 +186,6 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
                   <div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Availability</p>
                     <div className="flex flex-wrap gap-1">{(worker.daysAvailable||[]).map(d=><span key={d} className="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full font-semibold">{d.slice(0,3)}</span>)}</div>
-                    <div className="flex flex-wrap gap-1 mt-2">{(worker.preferredWorkingHours||[]).map(h=><span key={h} className="text-xs bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full">{h}</span>)}</div>
                   </div>
                 )}
                 <div>
@@ -111,34 +223,103 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
 
 // ── Hire Modal ───────────────────────────────────────────────────────────────
 function HireModal({ worker, onClose, onSuccess }) {
-  const name = worker.userId?.fullName || "Worker";
-  const initials = name.split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase();
-  const pricing = worker.servicePricing?.[0] || {};
+  const name      = worker.userId?.fullName || "Worker";
+  const initials  = name.split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase();
+  const pricing   = worker.servicePricing?.[0] || {};
   const serviceId = worker.services?.[0]?._id || worker.services?.[0];
+  const today     = new Date().toISOString().split("T")[0];
 
-  const [form, setForm] = useState({ hiringType:"Daily", jobDate:"", location:"", description:"" });
+  const [form, setForm] = useState({
+    hiringType:  "Daily",
+    jobDate:     "",
+    hours:       1,
+    days:        1,
+    startDate:   "",
+    endDate:     "",
+    location:    "",
+    description: "",
+  });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const [errors,     setErrors]     = useState({});
 
-  const rateMap = { Hourly:pricing.hourlyRate, Daily:pricing.dailyRate, Weekly:pricing.weeklyRate, Monthly:pricing.monthlyRate };
-  const rate = rateMap[form.hiringType] || 0;
-  const qty = {Hourly:1,Daily:1,Weekly:7,Monthly:30}[form.hiringType];
-  const cost = rate * qty;
+  const setErr = (field) => {
+    setErrors(e => ({ ...e, [field]: true }));
+    setTimeout(() => {
+      document.getElementById(`field-${field}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  };
+  const clearErr = (field) => setErrors(e => ({ ...e, [field]: false }));
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const hourlyRate = Number(pricing.hourlyRate) || 0;
+  const dailyRate  = Number(pricing.dailyRate)  || 0;
+
+  const hourlyBreakdown = form.hiringType === "Hourly" && hourlyRate > 0 && form.hours > 0
+    ? { breakdown: [{ label: `${form.hours} hour${form.hours>1?"s":""}`, rate: hourlyRate, unit: "hr", cost: form.hours * hourlyRate }], total: form.hours * hourlyRate }
+    : null;
+
+  const dailyBreakdown = form.hiringType === "Daily" && dailyRate > 0 && form.days > 0
+    ? { breakdown: [{ label: `${form.days} day${form.days>1?"s":""}`, rate: dailyRate, unit: "day", cost: form.days * dailyRate }], total: form.days * dailyRate }
+    : null;
+
+  const needsDates = ["Weekly", "Monthly"].includes(form.hiringType);
+  const cascading  = needsDates ? calcCascadingCost(form.startDate, form.endDate, pricing) : null;
+
+  const minEndDate = form.hiringType === "Weekly"
+    ? addDays(form.startDate, 6)
+    : form.hiringType === "Monthly"
+      ? addDays(form.startDate, 29)
+      : today;
+
+  const maxEndDate = form.hiringType === "Weekly"
+    ? addDays(form.startDate, 28)
+    : undefined;
+
+  const totalCost =
+    form.hiringType === "Hourly" ? (hourlyBreakdown?.total || 0) :
+    form.hiringType === "Daily"  ? (dailyBreakdown?.total  || 0) :
+    (cascading?.total || 0);
+
+  const jobDateForApi = needsDates ? form.startDate : form.jobDate;
 
   const handleSubmit = async () => {
-    if (!form.jobDate||!form.location){ setError("Job date and location are required."); return; }
-    setSubmitting(true); setError("");
+    // validate in order — scroll to first missing field
+    if (form.hiringType === "Hourly" && !form.jobDate)  { setErr("jobDate");   return; }
+    if (form.hiringType === "Daily"  && !form.jobDate)  { setErr("jobDate");   return; }
+    if (needsDates && !form.startDate)                  { setErr("startDate"); return; }
+    if (needsDates && !form.endDate)                    { setErr("endDate");   return; }
+    if (!form.location)                                 { setErr("location");  return; }
+
+    setSubmitting(true);
     try {
-      await api.post("/employers/jobs",{ workerId:worker.userId?._id, serviceId, hiringType:form.hiringType, jobDate:form.jobDate, description:`${form.location}${form.description?" — "+form.description:""}`, estimatedCost:cost });
+      await api.post("/employers/jobs", {
+  workerId:      worker.userId?._id,
+  serviceId,
+  hiringType:    form.hiringType,
+  jobDate:       jobDateForApi,
+  startDate:     needsDates ? form.startDate : undefined,
+  endDate:       needsDates ? form.endDate   : undefined,
+  quantity:      form.hiringType === "Hourly" ? form.hours
+               : form.hiringType === "Daily"  ? form.days
+               : undefined,
+  description:   `${form.location}${form.description ? " — " + form.description : ""}`,
+  estimatedCost: totalCost,
+});
       onSuccess();
-    } catch(e){ setError(e.message||"Failed to send request"); }
-    finally{ setSubmitting(false); }
+    } catch (e) {
+      setErrors(ev => ({ ...ev, submit: true, submitMsg: e.message || "Failed to send request" }));
+      setTimeout(() => document.getElementById("field-submit")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
         <div className="p-5 border-b border-slate-100">
           <p className="text-xs font-bold tracking-widest text-teal-600 uppercase mb-1">JOB REQUEST</p>
           <h2 className="text-xl font-black text-slate-800">Send Job Request</h2>
@@ -153,74 +334,202 @@ function HireModal({ worker, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div className="p-5 space-y-4 overflow-y-auto max-h-[55vh]">
-          {/* Hiring type */}
+        {/* Form Body */}
+        <div className="p-5 space-y-4 overflow-y-auto max-h-[62vh]">
+
+          {/* Hiring Type */}
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hiring Type *</label>
             <div className="grid grid-cols-4 gap-2 mt-2">
               {["Hourly","Daily","Weekly","Monthly"].map(t=>(
-                <button key={t} onClick={()=>set("hiringType",t)}
-                  className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-0.5 ${form.hiringType===t?"border-teal-500 bg-teal-50 text-teal-700":"border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                <button key={t} onClick={()=>{ set("hiringType",t); setErrors({}); }}
+                  className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-0.5 ${
+                    form.hiringType===t ? "border-teal-500 bg-teal-50 text-teal-700" : "border-slate-200 text-slate-500 hover:border-slate-300"
+                  }`}>
                   <span className="text-base">{t==="Hourly"?"⏰":t==="Daily"?"📅":t==="Weekly"?"📋":"🗓"}</span>
                   {t.toUpperCase()}
                 </button>
               ))}
             </div>
+            <p className="text-[10px] text-slate-400 mt-1.5">
+              {form.hiringType === "Hourly"  && "Select up to 23 hours. For a full day or more use Daily."}
+              {form.hiringType === "Daily"   && "Select 1–6 days. For a full week or more use Weekly."}
+              {form.hiringType === "Weekly"  && "Select 7–29 days. For a full month or more use Monthly."}
+              {form.hiringType === "Monthly" && "Minimum 30 days. For longer durations add more months, weeks or days."}
+            </p>
           </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Job Date *</label>
-            <input type="date" value={form.jobDate} onChange={e=>set("jobDate",e.target.value)} min={new Date().toISOString().split("T")[0]}
-              className="mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-          </div>
+          {/* ── HOURLY ── */}
+          {form.hiringType === "Hourly" && (
+            <div className="space-y-3">
+              <div id="field-jobDate">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Job Date *</label>
+                <input type="date" value={form.jobDate} min={today}
+                  onChange={e=>{ set("jobDate",e.target.value); clearErr("jobDate"); }}
+                  className={`mt-1.5 w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.jobDate ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-teal-400"}`}
+                />
+                {errors.jobDate && <p className="text-red-500 text-xs mt-1 font-semibold">⚠ This field is required</p>}
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Number of Hours * <span className="text-slate-300 font-normal">(max 23)</span>
+                </label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <button onClick={()=>set("hours", Math.max(1, form.hours-1))}
+                    className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 font-black text-lg hover:bg-slate-50 flex items-center justify-center">−</button>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-black text-slate-800">{form.hours}</span>
+                    <span className="text-sm text-slate-400 ml-1">hour{form.hours>1?"s":""}</span>
+                  </div>
+                  <button onClick={()=>set("hours", Math.min(23, form.hours+1))}
+                    className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 font-black text-lg hover:bg-slate-50 flex items-center justify-center">+</button>
+                </div>
+                <input type="range" min={1} max={23} value={form.hours}
+                  onChange={e=>set("hours", Number(e.target.value))}
+                  className="w-full mt-2 accent-teal-500"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>1 hr</span><span>23 hrs max</span>
+                </div>
+              </div>
+              {hourlyBreakdown && form.jobDate && (
+                <CostBreakdown {...hourlyBreakdown} totalDays={form.hours} label="hours" />
+              )}
+            </div>
+          )}
 
-          <div>
+          {/* ── DAILY ── */}
+          {form.hiringType === "Daily" && (
+            <div className="space-y-3">
+              <div id="field-jobDate">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Start Date *</label>
+                <input type="date" value={form.jobDate} min={today}
+                  onChange={e=>{ set("jobDate",e.target.value); clearErr("jobDate"); }}
+                  className={`mt-1.5 w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.jobDate ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-teal-400"}`}
+                />
+                {errors.jobDate && <p className="text-red-500 text-xs mt-1 font-semibold">⚠ This field is required</p>}
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Number of Days * <span className="text-slate-300 font-normal">(max 6)</span>
+                </label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <button onClick={()=>set("days", Math.max(1, form.days-1))}
+                    className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 font-black text-lg hover:bg-slate-50 flex items-center justify-center">−</button>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-black text-slate-800">{form.days}</span>
+                    <span className="text-sm text-slate-400 ml-1">day{form.days>1?"s":""}</span>
+                  </div>
+                  <button onClick={()=>set("days", Math.min(6, form.days+1))}
+                    className="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 font-black text-lg hover:bg-slate-50 flex items-center justify-center">+</button>
+                </div>
+                <input type="range" min={1} max={6} value={form.days}
+                  onChange={e=>set("days", Number(e.target.value))}
+                  className="w-full mt-2 accent-teal-500"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>1 day</span><span>6 days max</span>
+                </div>
+              </div>
+              {dailyBreakdown && form.jobDate && (
+                <CostBreakdown {...dailyBreakdown} totalDays={form.days} label="days" />
+              )}
+            </div>
+          )}
+
+          {/* ── WEEKLY / MONTHLY ── */}
+          {needsDates && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div id="field-startDate">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Start Date *</label>
+                  <input type="date" value={form.startDate} min={today}
+                    onChange={e=>{ set("startDate",e.target.value); set("endDate",""); clearErr("startDate"); }}
+                    className={`mt-1.5 w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.startDate ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-teal-400"}`}
+                  />
+                  {errors.startDate && <p className="text-red-500 text-xs mt-1 font-semibold">⚠ This field is required</p>}
+                </div>
+                <div id="field-endDate">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    End Date *
+                    <span className="text-slate-400 normal-case font-normal ml-1">
+                      {form.hiringType==="Weekly" ? "(min 7 days)" : "(min 30 days)"}
+                    </span>
+                  </label>
+                  <input type="date" value={form.endDate}
+                    min={minEndDate || today}
+                    max={maxEndDate || undefined}
+                    disabled={!form.startDate}
+                    onChange={e=>{ set("endDate",e.target.value); clearErr("endDate"); }}
+                    className={`mt-1.5 w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${
+                      errors.endDate ? "border-red-400 focus:ring-red-200"
+                      : !form.startDate ? "opacity-40 cursor-not-allowed border-slate-200"
+                      : "border-slate-200 focus:ring-teal-400"
+                    }`}
+                  />
+                  {!form.startDate && <p className="text-[10px] text-slate-400 mt-1">Select start date first</p>}
+                  {errors.endDate && <p className="text-red-500 text-xs mt-1 font-semibold">⚠ This field is required</p>}
+                </div>
+              </div>
+              {cascading && <CostBreakdown {...cascading} />}
+              {form.startDate && form.endDate && !cascading && (
+                <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-xl">
+                  ⚠ Worker hasn't set rates for this period — cost cannot be estimated.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Location */}
+          <div id="field-location">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Location / Address *</label>
-            <input value={form.location} onChange={e=>set("location",e.target.value)} placeholder="House No., Street, Area, City"
-              className="mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+            <input value={form.location} onChange={e=>{ set("location",e.target.value); clearErr("location"); }}
+              placeholder="House No., Street, Area, City"
+              className={`mt-1.5 w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.location ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-teal-400"}`}
+            />
+            {errors.location && <p className="text-red-500 text-xs mt-1 font-semibold">⚠ This field is required</p>}
           </div>
 
+          {/* Description */}
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex justify-between">
               Job Description <span className="text-slate-400 normal-case font-normal">(Max 300 chars)</span>
             </label>
-            <textarea value={form.description} onChange={e=>set("description",e.target.value)} maxLength={300} rows={3} placeholder="Describe the job..."
-              className="mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"/>
+            <textarea value={form.description} onChange={e=>set("description",e.target.value)}
+              maxLength={300} rows={3} placeholder="Describe the job..."
+              className="mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+            />
           </div>
 
-          {rate>0&&(
-            <div className="bg-[#0F172A] rounded-xl p-4">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">ESTIMATED COST</p>
-              <p className="text-white font-black text-2xl mt-1">PKR {cost.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs">Rate: {rate.toLocaleString()}/{form.hiringType.toLowerCase()} &nbsp; Qty: {qty} {form.hiringType.toLowerCase()}</p>
-              <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-800 text-xs">
-                <div>
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1.5">⊙ REQUEST SUMMARY</p>
-                  <div className="space-y-1">
-                    <div className="flex justify-between"><span className="text-slate-400">Hire Type</span><span className="text-white font-semibold">{form.hiringType}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Duration</span><span className="text-white font-semibold">1 {form.hiringType.toLowerCase()}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Total Est.</span><span className="text-white font-semibold">PKR {cost.toLocaleString()}</span></div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1.5">⊙ HOW IT WORKS</p>
-                  <ol className="space-y-0.5 text-slate-400">
-                    <li>1. Request is sent</li><li>2. Worker reviews it</li><li>3. 24h to respond</li><li>4. Job starts on date</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
+          {/* Dark cost cards */}
+          {form.hiringType === "Hourly" && hourlyBreakdown && form.jobDate && (
+            <DarkCostCard hiringType={form.hiringType} breakdown={hourlyBreakdown.breakdown} total={hourlyBreakdown.total} />
+          )}
+          {form.hiringType === "Daily" && dailyBreakdown && form.jobDate && (
+            <DarkCostCard hiringType={form.hiringType} breakdown={dailyBreakdown.breakdown} total={dailyBreakdown.total} />
+          )}
+          {needsDates && cascading && (
+            <DarkCostCard hiringType={form.hiringType} breakdown={cascading.breakdown} total={cascading.total} />
           )}
 
-          {error&&<p className="text-red-500 text-sm">{error}</p>}
+          {/* API submit error */}
+          <div id="field-submit">
+            {errors.submit && (
+              <p className="text-red-500 text-sm font-semibold">⚠ {errors.submitMsg || "Failed to send request"}</p>
+            )}
+          </div>
+
         </div>
 
+        {/* Footer */}
         <div className="p-5 border-t border-slate-100">
           <button onClick={handleSubmit} disabled={submitting}
             className="w-full bg-teal-500 hover:bg-teal-400 disabled:opacity-60 text-white font-black py-3 rounded-xl text-sm transition-all">
-            {submitting?"Sending...":"Send Job Request →"}
+            {submitting ? "Sending..." : "Send Job Request →"}
           </button>
-          <p className="text-center text-xs text-slate-400 mt-2">Worker has 24 hours to accept or reject your request.</p>
+          <p className="text-center text-xs text-slate-400 mt-2">
+            Worker has 24 hours to accept or reject your request.
+          </p>
         </div>
       </div>
     </div>
@@ -230,25 +539,25 @@ function HireModal({ worker, onClose, onSuccess }) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function FindWorkers() {
   const { workers, search, loading } = useWorkerSearch();
-  const [services, setServices] = useState([]);
-  const [filters, setFilters]   = useState({ service:"", city:"", area:"", availability:"" });
+  const [services,   setServices]   = useState([]);
+  const [filters,    setFilters]    = useState({ service:"", city:"", area:"", availability:"" });
   const [viewWorker, setViewWorker] = useState(null);
   const [hireWorker, setHireWorker] = useState(null);
-  const [toast, setToast] = useState("");
+  const [toast,      setToast]      = useState("");
   const set = (k,v) => setFilters(f=>({...f,[k]:v}));
 
   useEffect(()=>{ api.get("/services").then(setServices).catch(()=>{}); search({}); },[]);
 
-const handleApply = () => {
-  const p = {};
-  if (filters.service)      p.serviceId         = filters.service;
-  if (filters.city)         p.preferredCity     = filters.city;
-  if (filters.area)         p.preferredArea     = filters.area;      // ← add this
-  if (filters.availability) p.availabilityBadge = filters.availability;
-  search(p);
-};
+  const handleApply = () => {
+    const p = {};
+    if (filters.service)      p.serviceId         = filters.service;
+    if (filters.city)         p.preferredCity     = filters.city;
+    if (filters.area)         p.preferredArea     = filters.area;
+    if (filters.availability) p.availabilityBadge = filters.availability;
+    search(p);
+  };
   const handleClear = () => { setFilters({service:"",city:"",area:"",availability:""}); search({}); };
-  const showToast = msg => { setToast(msg); setTimeout(()=>setToast(""),3000); };
+  const showToast   = msg => { setToast(msg); setTimeout(()=>setToast(""),3000); };
 
   const CITIES = ["Lahore","Karachi","Islamabad","Rawalpindi","Faisalabad","Multan","Peshawar"];
 
@@ -260,11 +569,10 @@ const handleApply = () => {
       {hireWorker&&<HireModal worker={hireWorker} onClose={()=>setHireWorker(null)} onSuccess={()=>{setHireWorker(null);showToast("✅ Job request sent!");}}/>}
 
       <div className="flex gap-5 p-6 max-w-6xl mx-auto">
-        {/* Filter sidebar */}
+        {/* Filter Sidebar */}
         <div className="w-52 shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sticky top-4 space-y-4">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-700">🔍 Filters</div>
-
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">SERVICE</label>
               <select value={filters.service} onChange={e=>set("service",e.target.value)} className="mt-1.5 w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -272,7 +580,6 @@ const handleApply = () => {
                 {services.map(s=><option key={s._id} value={s._id}>{s.name}</option>)}
               </select>
             </div>
-
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CITY</label>
               <select value={filters.city} onChange={e=>set("city",e.target.value)} className="mt-1.5 w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -280,7 +587,6 @@ const handleApply = () => {
                 {CITIES.map(c=><option key={c}>{c}</option>)}
               </select>
             </div>
-
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AREA</label>
               <select value={filters.area} onChange={e=>set("area",e.target.value)} className="mt-1.5 w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -288,7 +594,6 @@ const handleApply = () => {
                 {["DHA","Gulberg","Johar Town","Bahria Town","Model Town"].map(a=><option key={a}>{a}</option>)}
               </select>
             </div>
-
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AVAILABILITY</label>
               <div className="mt-2 space-y-1.5">
@@ -304,7 +609,6 @@ const handleApply = () => {
                 ))}
               </div>
             </div>
-
             <button onClick={handleApply} className="w-full bg-[#0F172A] hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all">Apply</button>
             <button onClick={handleClear} className="w-full text-slate-400 hover:text-slate-600 text-xs font-semibold py-1 transition-all">Clear</button>
           </div>
