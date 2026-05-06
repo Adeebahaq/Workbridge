@@ -322,7 +322,9 @@
     "all_workers": "All Workers",
     "job_stats": "Job Stats",
     "logout": "Logout",
-    "home_link": "Home"
+    "home_link": "Home",
+    "find_workers": "Find Workers"
+
   },
   "workers": {
     "title": "Verified Workers",
@@ -335,4 +337,5 @@
     "register_to_hire": "Register to Hire",
     "login_to_hire": "Login to Hire"
   }
+  
 }

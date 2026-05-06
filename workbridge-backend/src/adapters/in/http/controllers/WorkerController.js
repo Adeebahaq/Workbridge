@@ -1,3 +1,5 @@
+const WorkerProfile = require("../../../out/persistence/mongoose/models/WorkerProfile.model");
+
 class WorkerController {
   constructor({
     registerWorkerUseCase,
@@ -19,7 +21,6 @@ class WorkerController {
     try {
       const workerData = {
         ...req.body,
-        // Pass full image object so use case doesn't have to guess types
         cnicFrontImage: req.file
           ? {
               url:        req.file.path.replace(/\\/g, "/"),
@@ -29,13 +30,9 @@ class WorkerController {
             }
           : null,
       };
-
       res.status(201).json(await this.registerWorkerUseCase.execute(workerData));
     } catch (e) {
-      // Clean up uploaded file if registration fails
-      if (req.file && req.file.path) {
-        require("fs").unlink(req.file.path, () => {});
-      }
+      if (req.file && req.file.path) require("fs").unlink(req.file.path, () => {});
       next(e);
     }
   }
@@ -53,6 +50,36 @@ class WorkerController {
         userId: req.user.userId,
         ...req.body,
       }));
+    } catch (e) { next(e); }
+  }
+
+  async updatePricing(req, res, next) {
+    try {
+      const { servicePricing } = req.body;
+      if (!servicePricing) {
+        return res.status(400).json({ message: "servicePricing is required" });
+      }
+
+      const profile = await WorkerProfile.findOne({ userId: req.user.userId }).lean();
+      if (!profile) return res.status(404).json({ message: "Worker profile not found" });
+
+      const serviceId = profile.services?.[0] || null;
+
+      const pricingEntry = {
+        serviceId,
+        hourlyRate:  servicePricing.hourlyRate  ? Number(servicePricing.hourlyRate)  : undefined,
+        dailyRate:   servicePricing.dailyRate   ? Number(servicePricing.dailyRate)   : undefined,
+        weeklyRate:  servicePricing.weeklyRate  ? Number(servicePricing.weeklyRate)  : undefined,
+        monthlyRate: servicePricing.monthlyRate ? Number(servicePricing.monthlyRate) : undefined,
+      };
+
+      const updated = await WorkerProfile.findOneAndUpdate(
+        { userId: req.user.userId },
+        { $set: { servicePricing: [pricingEntry] } },
+        { new: true }
+      ).lean();
+
+      res.json({ message: "Pricing updated successfully", servicePricing: updated.servicePricing });
     } catch (e) { next(e); }
   }
 

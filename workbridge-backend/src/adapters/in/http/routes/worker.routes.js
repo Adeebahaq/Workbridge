@@ -35,11 +35,18 @@ module.exports = function(controller) {
     (req, res, next) => controller.getMe(req, res, next)
   );
 
-  // Protected worker routes
+  // Protected: update availability / location
   router.patch(
     "/availability",
     authMiddleware, roleMiddleware("worker"),
     (req, res, next) => controller.updateAvailability(req, res, next)
+  );
+
+  // ── NEW: update service pricing ──────────────────────────────────────────
+  router.patch(
+    "/pricing",
+    authMiddleware, roleMiddleware("worker"),
+    (req, res, next) => controller.updatePricing(req, res, next)
   );
 
   router.patch(
