@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
+import AdminCreateWorker from "../../components/admin/AdminCreateWorker";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -81,7 +82,11 @@ function DonutChart({ data }) {
 function BarChart({ data }) {
   const entries = Object.entries(data);
   const max = Math.max(...entries.map(([, v]) => v), 1);
-  const labels = { requested:"Req", accepted:"Acc", inProgress:"Prog", awaitingConfirmation:"Wait", completed:"Done", rejected:"Rej", cancelled:"Canc", expired:"Exp" };
+  const labels = {
+    requested: "Req", accepted: "Acc", inProgress: "Prog",
+    awaitingConfirmation: "Wait", completed: "Done",
+    rejected: "Rej", cancelled: "Canc", expired: "Exp",
+  };
   return (
     <div className="flex items-end gap-2 h-32 mt-2">
       {entries.map(([key, val]) => (
@@ -128,9 +133,13 @@ function ReviewModal({ worker, onClose, onAction }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col"
+        style={{ maxHeight: "90vh" }}
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="bg-[#0F172A] p-6 text-white">
+        <div className="bg-[#0F172A] p-6 text-white rounded-t-2xl shrink-0">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">Worker Review</span>
             <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all">✕</button>
@@ -151,8 +160,8 @@ function ReviewModal({ worker, onClose, onAction }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-100">
-          {["info","services","documents"].map(t => (
+        <div className="flex border-b border-slate-100 shrink-0">
+          {["info", "services", "documents"].map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
               className={`flex-1 py-3 text-xs font-bold capitalize transition-all ${activeTab === t ? "border-b-2 border-teal-500 text-teal-600" : "text-slate-400 hover:text-slate-600"}`}>
               {t === "info" ? "Personal Info" : t === "services" ? "Services & Availability" : "Documents"}
@@ -160,22 +169,23 @@ function ReviewModal({ worker, onClose, onAction }) {
           ))}
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "info" && (
             <div className="grid grid-cols-2 gap-3">
               {[
-                ["Full Name",    name],
-                ["Phone",        worker.userId?.phone],
-                ["CNIC",         worker.cnicNumber],
-                ["Gender",       worker.gender],
-                ["Date of Birth", fmt(worker.dateOfBirth)],
-                ["Marital Status", worker.maritalStatus],
-                ["Father/Spouse", worker.fatherSpouseName],
+                ["Full Name",       name],
+                ["Phone",           worker.userId?.phone],
+                ["CNIC",            worker.cnicNumber],
+                ["Gender",          worker.gender],
+                ["Date of Birth",   fmt(worker.dateOfBirth)],
+                ["Marital Status",  worker.maritalStatus],
+                ["Father/Spouse",   worker.fatherSpouseName],
                 ["Current Address", worker.currentAddress],
-                ["Preferred City", worker.preferredCity],
+                ["Preferred City",  worker.preferredCity],
                 ["Employment Type", worker.employmentType],
-                ["Submitted",    fmt(worker.submittedAt)],
-                ["Max Travel",   worker.maxTravelDistance ? `${worker.maxTravelDistance} km` : "—"],
+                ["Submitted",       fmt(worker.submittedAt)],
+                ["Max Travel",      worker.maxTravelDistance ? `${worker.maxTravelDistance} km` : "—"],
               ].map(([label, val]) => (
                 <div key={label} className={label === "Current Address" ? "col-span-2" : ""}>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
@@ -212,7 +222,9 @@ function ReviewModal({ worker, onClose, onAction }) {
                   {(worker.preferredWorkingHours || []).map(h => (
                     <span key={h} className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full">{h}</span>
                   ))}
-                  {(!worker.preferredWorkingHours || worker.preferredWorkingHours.length === 0) && <span className="text-slate-400 text-sm">Not specified</span>}
+                  {(!worker.preferredWorkingHours || worker.preferredWorkingHours.length === 0) && (
+                    <span className="text-slate-400 text-sm">Not specified</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -224,7 +236,7 @@ function ReviewModal({ worker, onClose, onAction }) {
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">CNIC Front</p>
                   <img
-                    src={`${import.meta.env.VITE_API_URL?.replace("/api","") || "http://localhost:5000"}/${worker.cnicFrontImage.url}`}
+                    src={`${import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000"}/${worker.cnicFrontImage.url}`}
                     alt="CNIC Front"
                     className="w-full rounded-2xl border border-slate-200 object-cover max-h-48"
                     onError={e => { e.target.style.display = "none"; }}
@@ -246,8 +258,8 @@ function ReviewModal({ worker, onClose, onAction }) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="p-5 border-t border-slate-100 bg-slate-50 space-y-3">
+        {/* Actions footer — always visible */}
+        <div className="shrink-0 p-5 border-t border-slate-100 bg-slate-50 space-y-3 rounded-b-2xl">
           {isPending && (
             <>
               <div>
@@ -390,10 +402,10 @@ function PendingRow({ worker, onReview }) {
 
 // ─── TABS ────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "overview",    label: "Overview",       icon: "⊞" },
-  { id: "verify",      label: "Verify Workers",  icon: "✅" },
-  { id: "all",         label: "All Workers",     icon: "👥" },
-  { id: "stats",       label: "Job Stats",       icon: "📊" },
+  { id: "overview", label: "Overview",       icon: "⊞" },
+  { id: "verify",   label: "Verify Workers", icon: "✅" },
+  { id: "all",      label: "All Workers",    icon: "👥" },
+  { id: "stats",    label: "Job Stats",      icon: "📊" },
 ];
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────
@@ -401,16 +413,16 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [tab, setTab]           = useState("overview");
-  const [metrics, setMetrics]   = useState(null);
-  const [pending, setPending]   = useState([]);
-  const [allWorkers, setAll]    = useState([]);
+  const [tab, setTab]                   = useState("overview");
+  const [metrics, setMetrics]           = useState(null);
+  const [pending, setPending]           = useState([]);
+  const [allWorkers, setAll]            = useState([]);
   const [filterStatus, setFilterStatus] = useState("");
-  const [loading, setLoading]   = useState({});
-  const [selected, setSelected] = useState(null);
-  const [toast, setToast]       = useState(null);
+  const [selected, setSelected]         = useState(null);
+  const [toast, setToast]               = useState(null);
   const [workerSearch, setWorkerSearch] = useState("");
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading]   = useState(true);
+  const [createModal, setCreateModal]   = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -468,13 +480,12 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── filtered workers for All Workers tab ─────────────────────────────
   const visibleWorkers = allWorkers.filter(w => {
     if (workerSearch) {
-      const q = workerSearch.toLowerCase();
-      const name = (w.userId?.fullName || "").toLowerCase();
-      const phone = (w.userId?.phone || "").toLowerCase();
-      const city = (w.preferredCity || "").toLowerCase();
+      const q     = workerSearch.toLowerCase();
+      const name  = (w.userId?.fullName || "").toLowerCase();
+      const phone = (w.userId?.phone    || "").toLowerCase();
+      const city  = (w.preferredCity    || "").toLowerCase();
       if (!name.includes(q) && !phone.includes(q) && !city.includes(q)) return false;
     }
     return true;
@@ -483,7 +494,6 @@ export default function AdminDashboard() {
   const jobData    = metrics?.todayJobActivity  || {};
   const allJobData = metrics?.allTimeJobActivity || {};
 
-  // ── loading placeholder ───────────────────────────────────────────────
   const StatSkeleton = () => (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 animate-pulse">
       <div className="w-10 h-10 rounded-xl bg-slate-200 mb-3" />
@@ -494,21 +504,29 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 mt-14">
-      {/* Toast */}
+
+      {/* ── Toast ──────────────────────────────────────────────────────────── */}
       {toast && (
         <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl text-white ${toast.type === "error" ? "bg-red-500" : "bg-teal-500"}`}>
           {toast.msg}
         </div>
       )}
 
-      {/* Review Modal */}
+      {/* ── Review Modal ────────────────────────────────────────────────────── */}
       {selected && (
         <ReviewModal worker={selected} onClose={() => setSelected(null)} onAction={handleAction} />
       )}
 
-      {/* ── Sidebar ────────────────────────────────────────────────────────── */}
+      {/* ── Create Worker Modal (fixed enums — uses AdminCreateWorker) ──────── */}
+      {createModal && (
+        <AdminCreateWorker
+          onClose={() => setCreateModal(false)}
+          onSuccess={(msg) => { showToast(msg); fetchAll(); }}
+        />
+      )}
+
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside className="w-56 shrink-0 bg-[#0F172A] flex flex-col min-h-screen fixed left-0 top-0 z-30">
-        {/* Logo */}
         <div className="px-5 pt-6 pb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center text-white font-black text-sm">W</div>
@@ -517,7 +535,6 @@ export default function AdminDashboard() {
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Admin Panel</p>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-0.5">
           {TABS.map(({ id, label, icon }) => (
             <button key={id} onClick={() => setTab(id)}
@@ -534,7 +551,6 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        {/* User */}
         <div className="p-3 border-t border-slate-800">
           <div className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-xl bg-slate-800/50">
             <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 font-black text-xs shrink-0">
@@ -552,10 +568,10 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ── Main Content ──────────────────────────────────────────────────────── */}
+      {/* ── Main Content ────────────────────────────────────────────────────── */}
       <main className="flex-1 ml-56 p-6 min-h-screen">
 
-        {/* ══ OVERVIEW ══════════════════════════════════════════════════════════ */}
+        {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-6 max-w-5xl">
             <div className="flex items-center justify-between">
@@ -563,22 +579,23 @@ export default function AdminDashboard() {
                 <h1 className="text-2xl font-black text-slate-800">Admin Dashboard</h1>
                 <p className="text-sm text-slate-400">Platform overview and key metrics</p>
               </div>
-              <button onClick={() => setTab("verify")}
-                className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all">
+              <button
+                onClick={() => setCreateModal(true)}
+                className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all"
+              >
                 + Create Worker Account
               </button>
             </div>
 
-            {/* Stat cards */}
             <div className="grid grid-cols-4 gap-4">
               {dataLoading ? (
-                [1,2,3,4].map(i => <StatSkeleton key={i} />)
+                [1, 2, 3, 4].map(i => <StatSkeleton key={i} />)
               ) : (
                 [
-                  { label: "Total Workers",    val: metrics?.totalWorkers    ?? "—", icon: "🧑‍🔧", color: "bg-blue-50 text-blue-600" },
-                  { label: "Total Employers",  val: metrics?.totalEmployers  ?? "—", icon: "🏢",  color: "bg-purple-50 text-purple-600" },
-                  { label: "Active Workers",   val: metrics?.activeWorkers   ?? "—", icon: "✅",  color: "bg-emerald-50 text-emerald-600" },
-                  { label: "Pending Review",   val: metrics?.pendingVerifications ?? "—", icon: "⏳", color: "bg-amber-50 text-amber-600" },
+                  { label: "Total Workers",   val: metrics?.totalWorkers         ?? "—", icon: "🧑‍🔧", color: "bg-blue-50 text-blue-600" },
+                  { label: "Total Employers", val: metrics?.totalEmployers       ?? "—", icon: "🏢",  color: "bg-purple-50 text-purple-600" },
+                  { label: "Active Workers",  val: metrics?.activeWorkers        ?? "—", icon: "✅",  color: "bg-emerald-50 text-emerald-600" },
+                  { label: "Pending Review",  val: metrics?.pendingVerifications ?? "—", icon: "⏳",  color: "bg-amber-50 text-amber-600" },
                 ].map(({ label, val, icon, color }) => (
                   <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
                     <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center text-xl mb-3`}>{icon}</div>
@@ -589,7 +606,6 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Today's Job Activity */}
             <div className="grid grid-cols-2 gap-6">
               {/* Donut */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -600,7 +616,7 @@ export default function AdminDashboard() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <p className="text-lg font-black text-slate-800">
-                          {dataLoading ? "…" : Object.values(jobData).reduce((a,b)=>a+b,0)}
+                          {dataLoading ? "…" : Object.values(jobData).reduce((a, b) => a + b, 0)}
                         </p>
                         <p className="text-[10px] text-slate-400 font-semibold">Total</p>
                       </div>
@@ -609,23 +625,27 @@ export default function AdminDashboard() {
                   <div className="space-y-2 flex-1">
                     {dataLoading ? (
                       <div className="space-y-2 animate-pulse">
-                        {[1,2,3].map(i => <div key={i} className="h-3 bg-slate-100 rounded w-full" />)}
+                        {[1, 2, 3].map(i => <div key={i} className="h-3 bg-slate-100 rounded w-full" />)}
                       </div>
                     ) : (
                       <>
-                        {Object.entries(jobData).filter(([,v])=>v>0).map(([key, val]) => {
-                          const total = Object.values(jobData).reduce((a,b)=>a+b,0) || 1;
-                          const labels = { requested:"Requested",accepted:"Accepted",inProgress:"In Progress",awaitingConfirmation:"Awaiting",completed:"Completed",rejected:"Rejected",cancelled:"Cancelled",expired:"Expired" };
+                        {Object.entries(jobData).filter(([, v]) => v > 0).map(([key, val]) => {
+                          const total = Object.values(jobData).reduce((a, b) => a + b, 0) || 1;
+                          const labels = {
+                            requested: "Requested", accepted: "Accepted", inProgress: "In Progress",
+                            awaitingConfirmation: "Awaiting", completed: "Completed",
+                            rejected: "Rejected", cancelled: "Cancelled", expired: "Expired",
+                          };
                           return (
                             <div key={key} className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: JOB_STATUS_COLORS[key]}} />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: JOB_STATUS_COLORS[key] }} />
                               <span className="text-xs text-slate-500 flex-1">{labels[key]}</span>
                               <span className="text-xs font-black text-slate-700">{val}</span>
-                              <span className="text-[10px] text-slate-400 w-8 text-right">{Math.round(val/total*100)}%</span>
+                              <span className="text-[10px] text-slate-400 w-8 text-right">{Math.round(val / total * 100)}%</span>
                             </div>
                           );
                         })}
-                        {Object.values(jobData).every(v=>v===0) && (
+                        {Object.values(jobData).every(v => v === 0) && (
                           <p className="text-sm text-slate-400">No jobs today yet</p>
                         )}
                       </>
@@ -634,7 +654,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Pending workers quick list */}
+              {/* Pending quick list */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-black text-slate-800">Pending Verifications</h3>
@@ -644,7 +664,7 @@ export default function AdminDashboard() {
                 </div>
                 {dataLoading ? (
                   <div className="space-y-2 animate-pulse">
-                    {[1,2,3].map(i => (
+                    {[1, 2, 3].map(i => (
                       <div key={i} className="flex items-center gap-3 p-2">
                         <div className="w-8 h-8 rounded-lg bg-slate-200 shrink-0" />
                         <div className="flex-1 space-y-1">
@@ -686,17 +706,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ══ VERIFY WORKERS ════════════════════════════════════════════════════ */}
+        {/* VERIFY WORKERS */}
         {tab === "verify" && (
           <div className="max-w-4xl space-y-5">
             <div>
               <h1 className="text-2xl font-black text-slate-800">Verify Workers</h1>
               <p className="text-sm text-slate-400">Review and approve pending worker profiles</p>
             </div>
-
             {dataLoading ? (
               <div className="space-y-3 animate-pulse">
-                {[1,2,3].map(i => (
+                {[1, 2, 3].map(i => (
                   <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-slate-200 shrink-0" />
                     <div className="flex-1 space-y-2">
@@ -723,7 +742,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ══ ALL WORKERS ═══════════════════════════════════════════════════════ */}
+        {/* ALL WORKERS */}
         {tab === "all" && (
           <div className="max-w-5xl space-y-5">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -731,18 +750,15 @@ export default function AdminDashboard() {
                 <h1 className="text-2xl font-black text-slate-800">All Workers</h1>
                 <p className="text-sm text-slate-400">Browse all registered workers on the platform</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Search name, phone, city..."
-                  value={workerSearch}
-                  onChange={e => setWorkerSearch(e.target.value)}
-                  className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 w-52"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Search name, phone, city..."
+                value={workerSearch}
+                onChange={e => setWorkerSearch(e.target.value)}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 w-52"
+              />
             </div>
 
-            {/* Status filter tabs */}
             <div className="flex gap-1 bg-white rounded-2xl p-1 shadow-sm border border-slate-100 w-fit">
               {[
                 { val: "",                     label: "All" },
@@ -768,7 +784,7 @@ export default function AdminDashboard() {
 
             {dataLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-                {[1,2,3,4,5,6].map(i => (
+                {[1, 2, 3, 4, 5, 6].map(i => (
                   <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-xl bg-slate-200 shrink-0" />
@@ -797,7 +813,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ══ JOB STATS ═════════════════════════════════════════════════════════ */}
+        {/* JOB STATS */}
         {tab === "stats" && (
           <div className="max-w-4xl space-y-6">
             <div>
@@ -805,10 +821,9 @@ export default function AdminDashboard() {
               <p className="text-sm text-slate-400">Platform-wide job activity and trends</p>
             </div>
 
-            {/* All-time stat cards */}
             <div className="grid grid-cols-5 gap-3">
               {dataLoading ? (
-                [1,2,3,4,5].map(i => (
+                [1, 2, 3, 4, 5].map(i => (
                   <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center animate-pulse">
                     <div className="w-10 h-10 rounded-xl bg-slate-200 mx-auto mb-2" />
                     <div className="h-7 w-8 bg-slate-200 rounded mx-auto mb-1" />
@@ -817,15 +832,15 @@ export default function AdminDashboard() {
                 ))
               ) : (
                 [
-                  { key:"requested",  label:"Requested",   icon:"📩" },
-                  { key:"accepted",   label:"Accepted",    icon:"✅" },
-                  { key:"inProgress", label:"In Progress", icon:"🔄" },
-                  { key:"completed",  label:"Completed",   icon:"🏁" },
-                  { key:"rejected",   label:"Rejected",    icon:"❌" },
+                  { key: "requested",  label: "Requested",   icon: "📩" },
+                  { key: "accepted",   label: "Accepted",    icon: "✅" },
+                  { key: "inProgress", label: "In Progress", icon: "🔄" },
+                  { key: "completed",  label: "Completed",   icon: "🏁" },
+                  { key: "rejected",   label: "Rejected",    icon: "❌" },
                 ].map(({ key, label, icon }) => (
                   <div key={key} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mx-auto mb-2"
-                         style={{backgroundColor: JOB_STATUS_COLORS[key] + "20"}}>
+                      style={{ backgroundColor: JOB_STATUS_COLORS[key] + "20" }}>
                       {icon}
                     </div>
                     <p className="text-2xl font-black text-slate-800">{allJobData[key] ?? 0}</p>
@@ -835,18 +850,17 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Today's breakdown bar chart */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-black text-slate-800">Today's Breakdown</h3>
                 <span className="text-xs text-slate-400">
-                  Total: {dataLoading ? "…" : Object.values(jobData).reduce((a,b)=>a+b,0)} jobs
+                  Total: {dataLoading ? "…" : Object.values(jobData).reduce((a, b) => a + b, 0)} jobs
                 </span>
               </div>
               {dataLoading ? (
                 <div className="flex items-end gap-2 h-32 mt-2 animate-pulse">
-                  {[60,40,80,30,90,20,50,70].map((h,i) => (
-                    <div key={i} className="flex-1 bg-slate-100 rounded-t-lg" style={{height:`${h}%`}} />
+                  {[60, 40, 80, 30, 90, 20, 50, 70].map((h, i) => (
+                    <div key={i} className="flex-1 bg-slate-100 rounded-t-lg" style={{ height: `${h}%` }} />
                   ))}
                 </div>
               ) : (
@@ -854,18 +868,17 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* All-time breakdown bar chart */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-black text-slate-800">All-Time Breakdown</h3>
                 <span className="text-xs text-slate-400">
-                  Total: {dataLoading ? "…" : Object.values(allJobData).reduce((a,b)=>a+b,0)} jobs
+                  Total: {dataLoading ? "…" : Object.values(allJobData).reduce((a, b) => a + b, 0)} jobs
                 </span>
               </div>
               {dataLoading ? (
                 <div className="flex items-end gap-2 h-32 mt-2 animate-pulse">
-                  {[60,40,80,30,90,20,50,70].map((h,i) => (
-                    <div key={i} className="flex-1 bg-slate-100 rounded-t-lg" style={{height:`${h}%`}} />
+                  {[60, 40, 80, 30, 90, 20, 50, 70].map((h, i) => (
+                    <div key={i} className="flex-1 bg-slate-100 rounded-t-lg" style={{ height: `${h}%` }} />
                   ))}
                 </div>
               ) : (

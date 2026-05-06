@@ -80,16 +80,20 @@ class RegisterWorkerUseCase {
     const cnicExists = await this.workerRepository.findByCnic(trimmed.cnicNumber);
     if (cnicExists) throw new AppError("CNIC already registered", 409);
 
-    // 7. Create User
+    // 7. Resolve adminCreated flag
+    const isAdminCreated = trimmed.adminCreated === true || trimmed.adminCreated === "true";
+
+    // 8. Create User
     const passwordHash = await hashPassword(trimmed.password);
     const user = await this.userRepository.save({
-      role: "worker",
-      fullName: trimmed.fullName,
-      phone:    trimmed.phone,
+      role:            "worker",
+      fullName:        trimmed.fullName,
+      phone:           trimmed.phone,
       passwordHash,
+      isPhoneVerified: isAdminCreated ? true : false,
     });
 
-    // 8. Create WorkerProfile
+    // 9. Create WorkerProfile
     await this.workerRepository.save({
       userId:           user._id,
       fatherSpouseName: trimmed.fatherSpouseName,
@@ -106,11 +110,15 @@ class RegisterWorkerUseCase {
       preferredCity:         trimmed.preferredCity,
       preferredAreas:        trimmed.preferredAreas,
       maxTravelDistance:     Number(trimmed.maxTravelDistance) || 20,
-      status:      "Pending Verification",
+      status:      isAdminCreated ? "Active" : "Pending Verification",
       submittedAt: new Date(),
     });
 
-    // 9. Send OTP (non-fatal if it fails)
+    // 10. Send OTP — skipped entirely when created by an admin
+    if (isAdminCreated) {
+      return { message: "Worker registered and activated by admin.", userId: user._id };
+    }
+
     try {
       await this.otpRepository.deleteByPhone(trimmed.phone);
       const otp     = generateOtp();
