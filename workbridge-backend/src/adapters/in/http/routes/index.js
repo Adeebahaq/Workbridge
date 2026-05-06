@@ -23,9 +23,13 @@ const employerRoutes = require("./employer.routes")(employerCtrl);
 const adminRoutes    = require("./admin.routes")(adminCtrl);
 const jobRoutes      = require("./job.routes")(jobCtrl);
 
-
-
 const router = Router();
+
+// Expose notificationRepo on app.locals so EmployerController.markAllNotificationsRead can use it
+router.use((req, res, next) => {
+  req.app.locals.notificationRepo = container.notificationRepo;
+  next();
+});
 
 // ── Public: service types list ───────────────────────────────────────────────
 router.get("/services", async (req, res, next) => {
@@ -35,11 +39,11 @@ router.get("/services", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── Public: verified workers (MUST be before router.use("/workers", ...)) ────
+// ── Public: verified workers preview (MUST be before router.use("/workers"...)) ──
 router.get("/workers/verified", async (req, res, next) => {
   try {
     const workers = await WorkerProfile.find({ status: "Active" })
-      .populate("userId", "fullName phone")
+      .populate("userId",   "fullName phone")
       .populate("services", "name")
       .select("userId services employmentType preferredCity availabilityBadge averageRating totalCompletedJobs")
       .sort({ averageRating: -1 })

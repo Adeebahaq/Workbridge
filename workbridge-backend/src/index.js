@@ -1,4 +1,6 @@
-require("dotenv").config();
+require('dotenv').config();
+// ✅ Fix
+console.log("URI:", process.env.MONGO_URI);
 const { connectDB } = require("./infrastructure/config/database");
 const { createApp } = require("./infrastructure/config/app");
 const { createServer } = require("http");
