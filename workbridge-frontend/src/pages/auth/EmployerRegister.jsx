@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import SpeakerButton from "../../components/ui/SpeakerButton";
+import { AlertCircle, Check, Smartphone } from "lucide-react";
 
 export default function EmployerRegister() {
   const { t } = useTranslation();
@@ -125,9 +126,7 @@ export default function EmployerRegister() {
             ].map(key => (
               <li key={key} className="flex items-center gap-3 text-sm text-slate-300">
                 <span className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center shrink-0">
-                  <svg className="w-3 h-3 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check size={12} className="text-teal-400" strokeWidth={2.5} />
                 </span>
                 <span>{t(key)}</span>
                 <SpeakerButton textKey={key} className="ml-auto shrink-0" />
@@ -151,13 +150,18 @@ export default function EmployerRegister() {
               <React.Fragment key={i}>
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                    i < step  ? "bg-teal-500 border-teal-500 text-white" :
+                    i < step   ? "bg-teal-500 border-teal-500 text-white" :
                     i === step ? "bg-slate-900 border-slate-900 text-white" :
                                  "bg-white border-slate-300 text-slate-400"
                   }`}>
-                    {i < step ? "✓" : i + 1}
+                    {i < step
+                      ? <Check size={13} strokeWidth={3} />
+                      : i + 1
+                    }
                   </div>
-                  <span className={`text-[10px] font-semibold whitespace-nowrap ${i === step ? "text-slate-900" : "text-slate-400"}`}>{label}</span>
+                  <span className={`text-[10px] font-semibold whitespace-nowrap ${i === step ? "text-slate-900" : "text-slate-400"}`}>
+                    {label}
+                  </span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={`flex-1 h-0.5 mb-4 transition-all ${i < step ? "bg-teal-500" : "bg-slate-200"}`} />
@@ -186,8 +190,9 @@ export default function EmployerRegister() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5">
-              ⚠️ {error}
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0" />
+              {error}
             </div>
           )}
 
@@ -272,7 +277,11 @@ export default function EmployerRegister() {
           {step === 1 && (
             <form onSubmit={verifyOtp} className="space-y-5">
               <div className="text-center py-2">
-                <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📱</div>
+
+                {/* Phone icon replacing 📱 emoji */}
+                <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Smartphone size={32} className="text-teal-500" strokeWidth={1.5} />
+                </div>
 
                 {/* OTP heading */}
                 <div className="flex items-center justify-center gap-2 mb-1">

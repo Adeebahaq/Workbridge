@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import DashboardLayout from "../components/layout/DashboardLayout";
+import WorkerChat from "../pages/worker/Chat";
 
 import Home                  from "../pages/Home";
 import Login                 from "../pages/auth/Login";
@@ -57,6 +58,8 @@ export default function AppRoutes() {
       <Route path="/worker/availability"  element={<PrivateRoute role="worker"><Availability /></PrivateRoute>} />
       <Route path="/worker/notifications" element={<PrivateRoute role="worker"><WorkerNotifications /></PrivateRoute>} />
       <Route path="/worker/ratings"       element={<PrivateRoute role="worker"><WorkerRatings /></PrivateRoute>} />
+      <Route path="/worker/chat"        element={<PrivateRoute role="worker"><WorkerChat /></PrivateRoute>} />
+      <Route path="/worker/chat/:jobId" element={<PrivateRoute role="worker"><WorkerChat /></PrivateRoute>} />
 
       {/* Employer routes */}
       <Route path="/employer/dashboard"     element={<PrivateRoute role="employer"><EmployerDashboard /></PrivateRoute>} />

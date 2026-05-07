@@ -1,5 +1,7 @@
 const { verifyToken } = require("../../../shared/utils/jwt");
 
+function makeKey(a, b) { return [a, b].map(String).sort().join("_"); }
+
 class ChatSocket {
   constructor({ sendMessageUseCase, getMessagesUseCase }) {
     this.sendMessageUseCase = sendMessageUseCase;
@@ -25,16 +27,20 @@ class ChatSocket {
       socket.on("send_message", async (data) => {
         try {
           const msg = await this.sendMessageUseCase.execute({
-            jobId: data.jobId, senderId: socket.user.userId,
-            receiverId: data.receiverId, text: data.text,
+            senderId: socket.user.userId,
+            receiverId: data.receiverId,
+            text: data.text,
           });
-          io.to(`job_${data.jobId}`).emit("new_message", msg);
+          const room = `chat_${makeKey(socket.user.userId, data.receiverId)}`;
+          io.to(room).emit("new_message", msg);
         } catch (e) { socket.emit("error", e.message); }
       });
 
-      socket.on("get_messages", async (jobId) => {
+      socket.on("get_messages", async ({ otherUserId }) => {
         try {
-          const msgs = await this.getMessagesUseCase.execute({ jobId });
+          const msgs = await this.getMessagesUseCase.execute({
+            userA: socket.user.userId, userB: otherUserId,
+          });
           socket.emit("messages", msgs);
         } catch (e) { socket.emit("error", e.message); }
       });

@@ -13,8 +13,9 @@ class LoginUseCase {
     const valid = await comparePassword(password, user.passwordHash);
     if (!valid) throw new AppError("Invalid credentials", 401);
 
-    if (!user.isWhatsappVerified && user.role !== "admin") {
-      throw new AppError("Please verify your WhatsApp number first", 403);
+    
+if (!user.isWhatsappVerified && !user.isPhoneVerified && user.role !== "admin") {
+      throw new AppError("Phone not verified. Please verify via OTP first.", 403);
     }
 
     // ✅ FIX: Always stringify _id so JWT payload has a clean string
