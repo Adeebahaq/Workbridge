@@ -4,34 +4,81 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import api from "../services/api";
 import SpeakerButton from "../components/ui/SpeakerButton";
+import {
+  Home as HomeIcon,
+  Car,
+  Leaf,
+  Baby,
+  ChefHat,
+  Zap,
+  Wrench,
+  Shield,
+  Sparkles,
+  Shirt,
+  CarFront,
+  HeartHandshake,
+  ShieldCheck,
+  Volume2,
+  Gift,
+  BarChart2,
+  Scale,
+  UserCircle,
+  Search,
+  FolderOpen,
+  Star,
+  FileText,
+  CheckCircle,
+  Mail,
+  DollarSign,
+  Users,
+  Briefcase,
+  ThumbsUp,
+  MapPin,
+  CircleDot,
+  CheckCircle2,
+  Info,
+  Globe,
+  LifeBuoy,
+  ScrollText,
+} from "lucide-react";
 
 // --- Constants & Config ---
 const FALLBACK_SERVICES = [
-  { _id: "Domestic Helpers", name: "Domestic Helpers", icon: "🏠" },
-  { _id: "Drivers",          name: "Drivers",          icon: "🚗" },
-  { _id: "Gardeners",        name: "Gardeners",        icon: "🌿" },
-  { _id: "Babysitters",      name: "Babysitters",      icon: "👶" },
-  { _id: "Cooks",            name: "Cooks",            icon: "🍳" },
-  { _id: "Electricians",     name: "Electricians",     icon: "⚡" },
-  { _id: "Plumbers",         name: "Plumbers",         icon: "🔧" },
-  { _id: "Security Guards",  name: "Security Guards",  icon: "🛡️" },
+  { _id: "Domestic Helpers", name: "Domestic Helpers" },
+  { _id: "Drivers",          name: "Drivers" },
+  { _id: "Gardeners",        name: "Gardeners" },
+  { _id: "Babysitters",      name: "Babysitters" },
+  { _id: "Cooks",            name: "Cooks" },
+  { _id: "Electricians",     name: "Electricians" },
+  { _id: "Plumbers",         name: "Plumbers" },
+  { _id: "Security Guards",  name: "Security Guards" },
 ];
 
 const SERVICE_ICONS = {
-  "Domestic Helpers": "🏠", "Drivers": "🚗", "Gardeners": "🌿", "Babysitters": "👶",
-  "Cooks": "🍳", "Electricians": "⚡", "Plumbers": "🔧", "Security Guards": "🛡️",
-  "House Cleaning": "🧹", "Laundry/Ironing": "👔", "Car Washing": "🚙", "Elderly Care": "👴",
+  "Domestic Helpers": HomeIcon,
+  "Drivers":          Car,
+  "Gardeners":        Leaf,
+  "Babysitters":      Baby,
+  "Cooks":            ChefHat,
+  "Electricians":     Zap,
+  "Plumbers":         Wrench,
+  "Security Guards":  Shield,
+  "House Cleaning":   Sparkles,
+  "Laundry/Ironing":  Shirt,
+  "Car Washing":      CarFront,
+  "Elderly Care":     HeartHandshake,
 };
+const DEFAULT_SERVICE_ICON = Wrench;
 
 const SERVICE_TRANS_KEYS = {
-  "Domestic Helpers": { name: "services.domestic", sub: "services.domestic_sub" },
-  "Drivers": { name: "services.drivers", sub: "services.drivers_sub" },
-  "Gardeners": { name: "services.gardeners", sub: "services.gardeners_sub" },
-  "Babysitters": { name: "services.babysitters", sub: "services.babysitters_sub" },
-  "Cooks": { name: "services.cooks", sub: "services.cooks_sub" },
-  "Electricians": { name: "services.electricians", sub: "services.electricians_sub" },
-  "Plumbers": { name: "services.plumbers", sub: "services.plumbers_sub" },
-  "Security Guards": { name: "services.security", sub: "services.security_sub" },
+  "Domestic Helpers": { name: "services.domestic",     sub: "services.domestic_sub" },
+  "Drivers":          { name: "services.drivers",      sub: "services.drivers_sub" },
+  "Gardeners":        { name: "services.gardeners",    sub: "services.gardeners_sub" },
+  "Babysitters":      { name: "services.babysitters",  sub: "services.babysitters_sub" },
+  "Cooks":            { name: "services.cooks",        sub: "services.cooks_sub" },
+  "Electricians":     { name: "services.electricians", sub: "services.electricians_sub" },
+  "Plumbers":         { name: "services.plumbers",     sub: "services.plumbers_sub" },
+  "Security Guards":  { name: "services.security",     sub: "services.security_sub" },
 };
 
 const REVIEW_KEYS = [
@@ -44,21 +91,18 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
-  const [openFaq, setOpenFaq] = useState(null);
-  const [activeTab, setActiveTab] = useState("employers");
-  const [stats] = useState({ workers: "2,840", jobs: "183", match: "97%", rating: "4.9" });
-  const [services, setServices] = useState(FALLBACK_SERVICES);
-  const [workers, setWorkers] = useState([]);
+  const [openFaq, setOpenFaq]               = useState(null);
+  const [activeTab, setActiveTab]           = useState("employers");
+  const [stats]                             = useState({ workers: "2,840", jobs: "183", match: "97%", rating: "4.9" });
+  const [services, setServices]             = useState(FALLBACK_SERVICES);
+  const [workers, setWorkers]               = useState([]);
   const [workersLoading, setWorkersLoading] = useState(true);
 
   useEffect(() => {
     api.get("/services")
       .then(res => {
         const list = Array.isArray(res) ? res : res?.data;
-        if (Array.isArray(list) && list.length > 0) {
-          const enriched = list.map(s => ({ ...s, icon: SERVICE_ICONS[s.name] || "🔧" }));
-          setServices(enriched);
-        }
+        if (Array.isArray(list) && list.length > 0) setServices(list);
       })
       .catch(() => {});
   }, []);
@@ -75,24 +119,24 @@ export default function Home() {
 
   // --- Data Arrays ---
   const WHY_FEATURES = [
-    { icon: "🛡️", titleKey: "why.cnic_title",     descKey: "why.cnic_desc" },
-    { icon: "🔊", titleKey: "why.urdu_title",     descKey: "why.urdu_desc" },
-    { icon: "⚡", titleKey: "why.realtime_title", descKey: "why.realtime_desc" },
-    { icon: "🆓", titleKey: "why.free_title",     descKey: "why.free_desc" },
-    { icon: "📊", titleKey: "why.ratings_title",  descKey: "why.ratings_desc" },
-    { icon: "⚖️", titleKey: "why.dispute_title",  descKey: "why.dispute_desc" },
+    { Icon: ShieldCheck, titleKey: "why.cnic_title",     descKey: "why.cnic_desc" },
+    { Icon: Volume2,     titleKey: "why.urdu_title",     descKey: "why.urdu_desc" },
+    { Icon: Zap,         titleKey: "why.realtime_title", descKey: "why.realtime_desc" },
+    { Icon: Gift,        titleKey: "why.free_title",     descKey: "why.free_desc" },
+    { Icon: BarChart2,   titleKey: "why.ratings_title",  descKey: "why.ratings_desc" },
+    { Icon: Scale,       titleKey: "why.dispute_title",  descKey: "why.dispute_desc" },
   ];
 
   const STEPS = activeTab === "employers" ? [
-    { icon: "👤", num: 1, titleKey: "how.emp_step1_title", descKey: "how.emp_step1_desc" },
-    { icon: "🔍", num: 2, titleKey: "how.emp_step2_title", descKey: "how.emp_step2_desc" },
-    { icon: "🗂",  num: 3, titleKey: "how.emp_step3_title", descKey: "how.emp_step3_desc" },
-    { icon: "⭐", num: 4, titleKey: "how.emp_step4_title", descKey: "how.emp_step4_desc" },
+    { Icon: UserCircle, num: 1, titleKey: "how.emp_step1_title", descKey: "how.emp_step1_desc" },
+    { Icon: Search,     num: 2, titleKey: "how.emp_step2_title", descKey: "how.emp_step2_desc" },
+    { Icon: FolderOpen, num: 3, titleKey: "how.emp_step3_title", descKey: "how.emp_step3_desc" },
+    { Icon: Star,       num: 4, titleKey: "how.emp_step4_title", descKey: "how.emp_step4_desc" },
   ] : [
-    { icon: "📝", num: 1, titleKey: "how.wrk_step1_title", descKey: "how.wrk_step1_desc" },
-    { icon: "✅", num: 2, titleKey: "how.wrk_step2_title", descKey: "how.wrk_step2_desc" },
-    { icon: "📩", num: 3, titleKey: "how.wrk_step3_title", descKey: "how.wrk_step3_desc" },
-    { icon: "💰", num: 4, titleKey: "how.wrk_step4_title", descKey: "how.wrk_step4_desc" },
+    { Icon: FileText,    num: 1, titleKey: "how.wrk_step1_title", descKey: "how.wrk_step1_desc" },
+    { Icon: CheckCircle, num: 2, titleKey: "how.wrk_step2_title", descKey: "how.wrk_step2_desc" },
+    { Icon: Mail,        num: 3, titleKey: "how.wrk_step3_title", descKey: "how.wrk_step3_desc" },
+    { Icon: DollarSign,  num: 4, titleKey: "how.wrk_step4_title", descKey: "how.wrk_step4_desc" },
   ];
 
   const FAQS = [
@@ -103,22 +147,24 @@ export default function Home() {
   ];
 
   const DASHBOARD_ROWS = [
-    { icon: "👥", labelKey: "hero.active_workers", val: stats.workers, subKey: "hero.week_change" },
-    { icon: "🗂",  labelKey: "hero.jobs_today",     val: stats.jobs,    subKey: "hero.day_change" },
-    { icon: "✅", labelKey: "hero.match_rate",     val: stats.match,   subKey: "hero.match_label" },
+    { Icon: Users,     labelKey: "hero.active_workers", val: stats.workers, subKey: "hero.week_change" },
+    { Icon: Briefcase, labelKey: "hero.jobs_today",     val: stats.jobs,    subKey: "hero.day_change" },
+    { Icon: ThumbsUp,  labelKey: "hero.match_rate",     val: stats.match,   subKey: "hero.match_label" },
   ];
 
   const HERO_BADGES = ["hero.badge_cnic", "hero.badge_urdu", "hero.badge_free", "hero.badge_48hr"];
 
   return (
     <div className="font-sans text-[#0F172A] bg-white pt-20">
-      
+
       {/* ── HERO ── */}
       <section className="bg-[#F8FAFC] pt-10 pb-16 px-6">
         <div dir="ltr" className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div dir="auto" style={{ textAlign: i18n.language === "ur" ? "right" : "left" }}>
+
             <div className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-xs font-bold text-slate-500 tracking-widest uppercase mb-6">
-              ◎ {t("hero.badge")}
+              <CircleDot size={12} className="text-teal-500" />
+              {t("hero.badge")}
               <SpeakerButton textKey="hero.badge" />
             </div>
 
@@ -127,20 +173,33 @@ export default function Home() {
                 {t("hero.title_line1")}<br />
                 <span className="text-teal-500">{t("hero.title_line2")}</span>
               </h1>
-              <SpeakerButton text={`${t("hero.title_line1")} ${t("hero.title_line2")}. ${t("hero.subtitle")}`} className="mt-2 shrink-0" />
+              <SpeakerButton
+                text={`${t("hero.title_line1")} ${t("hero.title_line2")}. ${t("hero.subtitle")}`}
+                className="mt-2 shrink-0"
+              />
             </div>
 
             <p className="text-slate-500 text-base leading-relaxed max-w-md mb-8">{t("hero.subtitle")}</p>
 
             <div className={`flex gap-3 mb-8 ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>
-              <button onClick={() => navigate("/login")} className="bg-[#0F172A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-slate-800 transition-all cursor-pointer border-none">{t("hero.btn_need_workers")}</button>
-              <button onClick={() => navigate("/register/worker")} className="bg-white text-[#0F172A] font-bold px-6 py-3 rounded-xl text-sm border-2 border-[#0F172A] hover:bg-slate-50 transition-all cursor-pointer">{t("hero.btn_find_work")}</button>
+              <button
+                onClick={() => navigate("/login")}
+                className="bg-[#0F172A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-slate-800 transition-all cursor-pointer border-none"
+              >
+                {t("hero.btn_need_workers")}
+              </button>
+              <button
+                onClick={() => navigate("/register/worker")}
+                className="bg-white text-[#0F172A] font-bold px-6 py-3 rounded-xl text-sm border-2 border-[#0F172A] hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                {t("hero.btn_find_work")}
+              </button>
             </div>
 
             <div className={`flex gap-4 flex-wrap ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>
               {HERO_BADGES.map((key) => (
                 <span key={key} className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                  <span className="w-4 h-4 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-[9px]">✓</span>
+                  <CheckCircle2 size={14} className="text-teal-500" />
                   {t(key)}
                 </span>
               ))}
@@ -148,18 +207,22 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right — Dashboard Card (Single Speaker for all stats) */}
+          {/* Right — Dashboard Card */}
           <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 relative">
             <div className="absolute top-6 right-6">
-               <SpeakerButton text={`${t("hero.dashboard_title")}. ${DASHBOARD_ROWS.map(r => `${t(r.labelKey)}: ${r.val}`).join(". ")}`} />
+              <SpeakerButton
+                text={`${t("hero.dashboard_title")}. ${DASHBOARD_ROWS.map(r => `${t(r.labelKey)}: ${r.val}`).join(". ")}`}
+              />
             </div>
             <div className="mb-5">
               <div className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mb-1">{t("hero.dashboard_label")}</div>
               <div className="text-base font-black text-[#0F172A]">{t("hero.dashboard_title")}</div>
             </div>
-            {DASHBOARD_ROWS.map(({ icon, labelKey, val, subKey }) => (
+            {DASHBOARD_ROWS.map(({ Icon, labelKey, val, subKey }) => (
               <div key={labelKey} className="flex items-center gap-4 py-3.5 border-b border-slate-50 last:border-0">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-lg">{icon}</div>
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                  <Icon size={20} />
+                </div>
                 <div className="flex-1">
                   <div className="text-[11px] font-semibold text-slate-400 mb-0.5">{t(labelKey)}</div>
                   <div className="flex items-baseline gap-2">
@@ -183,12 +246,14 @@ export default function Home() {
           <p className="text-slate-500 text-base max-w-xl mx-auto mb-14">{t("why.subtitle")}</p>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-5 text-left">
-            {WHY_FEATURES.map(({ icon, titleKey, descKey }) => (
+            {WHY_FEATURES.map(({ Icon, titleKey, descKey }) => (
               <div key={titleKey} className="bg-slate-50 rounded-2xl p-5 hover:shadow-md transition-shadow relative group">
                 <div className="absolute top-4 right-4">
-                   <SpeakerButton text={`${t(titleKey)}. ${t(descKey)}`} />
+                  <SpeakerButton text={`${t(titleKey)}. ${t(descKey)}`} />
                 </div>
-                <div className="text-2xl mb-3">{icon}</div>
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-3">
+                  <Icon size={20} />
+                </div>
                 <div className="font-black text-sm text-[#0F172A] mb-1.5">{t(titleKey)}</div>
                 <div className="text-slate-500 text-xs leading-relaxed">{t(descKey)}</div>
               </div>
@@ -206,18 +271,32 @@ export default function Home() {
           </div>
 
           <div className="inline-flex bg-white rounded-xl p-1 border border-slate-200 mb-12">
-            <button onClick={() => setActiveTab("employers")} className={`px-6 py-2.5 text-sm font-bold rounded-lg border-none cursor-pointer transition-all ${activeTab === "employers" ? "bg-[#0F172A] text-white" : "text-slate-500 bg-transparent"}`}>{t("how.tab_employers")}</button>
-            <button onClick={() => setActiveTab("workers")} className={`px-6 py-2.5 text-sm font-bold rounded-lg border-none cursor-pointer transition-all ${activeTab === "workers" ? "bg-[#0F172A] text-white" : "text-slate-500 bg-transparent"}`}>{t("how.tab_workers")}</button>
+            <button
+              onClick={() => setActiveTab("employers")}
+              className={`px-6 py-2.5 text-sm font-bold rounded-lg border-none cursor-pointer transition-all ${activeTab === "employers" ? "bg-[#0F172A] text-white" : "text-slate-500 bg-transparent"}`}
+            >
+              {t("how.tab_employers")}
+            </button>
+            <button
+              onClick={() => setActiveTab("workers")}
+              className={`px-6 py-2.5 text-sm font-bold rounded-lg border-none cursor-pointer transition-all ${activeTab === "workers" ? "bg-[#0F172A] text-white" : "text-slate-500 bg-transparent"}`}
+            >
+              {t("how.tab_workers")}
+            </button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STEPS.map(({ icon, num, titleKey, descKey }) => (
+            {STEPS.map(({ Icon, num, titleKey, descKey }) => (
               <div key={num} className="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100 relative">
                 <div className="absolute top-2 right-2">
                   <SpeakerButton text={`${t(titleKey)}. ${t(descKey)}`} />
                 </div>
-                <div className="absolute -top-3 left-4 w-7 h-7 rounded-lg bg-[#0F172A] text-white text-xs font-black flex items-center justify-center">{num}</div>
-                <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center text-3xl mx-auto mb-4 mt-2">{icon}</div>
+                <div className="absolute -top-3 left-4 w-7 h-7 rounded-lg bg-[#0F172A] text-white text-xs font-black flex items-center justify-center">
+                  {num}
+                </div>
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 mx-auto mb-4 mt-2">
+                  <Icon size={28} />
+                </div>
                 <div className="font-black text-sm mb-2">{t(titleKey)}</div>
                 <div className="text-slate-400 text-xs leading-relaxed">{t(descKey)}</div>
               </div>
@@ -234,20 +313,32 @@ export default function Home() {
               <h2 className="text-4xl font-black">{t("services.title")}</h2>
               <SpeakerButton text={t("services.title")} />
             </div>
-            <button onClick={() => navigate("/login")} className="text-sm font-bold text-teal-600 hover:text-teal-800 bg-transparent border-none cursor-pointer">{t("services.browse_all")}</button>
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm font-bold text-teal-600 hover:text-teal-800 bg-transparent border-none cursor-pointer"
+            >
+              {t("services.browse_all")}
+            </button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {services.map(({ icon, name, _id }) => {
-              const keys = SERVICE_TRANS_KEYS[name] || SERVICE_TRANS_KEYS[_id];
-              const displayName = keys ? t(keys.name) : name;
-              const displaySub  = keys ? t(keys.sub)  : name;
+            {services.map(({ name, _id }) => {
+              const keys          = SERVICE_TRANS_KEYS[name] || SERVICE_TRANS_KEYS[_id];
+              const displayName   = keys ? t(keys.name) : name;
+              const displaySub    = keys ? t(keys.sub)  : name;
+              const IconComponent = SERVICE_ICONS[name] || SERVICE_ICONS[_id] || DEFAULT_SERVICE_ICON;
               return (
-                <div key={name} onClick={() => navigate("/login")} className="bg-slate-50 rounded-2xl p-5 hover:bg-teal-50 hover:shadow-md transition-all cursor-pointer relative group">
+                <div
+                  key={name}
+                  onClick={() => navigate("/login")}
+                  className="bg-slate-50 rounded-2xl p-5 hover:bg-teal-50 hover:shadow-md transition-all cursor-pointer relative group"
+                >
                   <div className="absolute top-4 right-4">
                     <SpeakerButton text={`${displayName}. ${displaySub}`} />
                   </div>
-                  <div className="text-3xl mb-3">{icon}</div>
+                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-teal-600 mb-3 shadow-sm group-hover:bg-teal-600 group-hover:text-white transition-all">
+                    <IconComponent size={22} />
+                  </div>
                   <div className="font-black text-sm text-[#0F172A] group-hover:text-teal-700 mb-1">{displayName}</div>
                   <div className="text-slate-400 text-xs">{displaySub}</div>
                 </div>
@@ -286,30 +377,28 @@ export default function Home() {
             </div>
           ) : workers.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <div className="text-5xl mb-4">👷</div>
+              <div className="flex justify-center mb-4">
+                <Users size={48} className="text-slate-300" />
+              </div>
               <p className="font-semibold">{t("workers.no_workers")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
               {workers.map((worker) => {
-                const name = worker.userId?.fullName || "Worker";
-                const initials = name.split(" ").slice(0,2).map(p => p[0]).join("").toUpperCase();
-                const city = worker.preferredCity || "Pakistan";
-                const badge = worker.availabilityBadge || "Available";
-                const rating = worker.averageRating ? worker.averageRating.toFixed(1) : null;
-                const jobs = worker.totalCompletedJobs || 0;
-                const serviceNames = (worker.services || []).map(s => s?.name || s).filter(Boolean).slice(0,2);
+                const name           = worker.userId?.fullName || "Worker";
+                const workerInitials = name.split(" ").slice(0,2).map(p => p[0]).join("").toUpperCase();
+                const city           = worker.preferredCity || "Pakistan";
+                const badge          = worker.availabilityBadge || "Available";
+                const rating         = worker.averageRating ? worker.averageRating.toFixed(1) : null;
+                const jobs           = worker.totalCompletedJobs || 0;
+                const serviceNames   = (worker.services || []).map(s => s?.name || s).filter(Boolean).slice(0,2);
                 const employmentType = worker.employmentType || "";
-                const badgeLabel = badge === "Available" ? t("workers.available") : t("workers.busy");
+                const badgeLabel     = badge === "Available" ? t("workers.available") : t("workers.busy");
 
                 const handleHire = () => {
-                  if (!user) {
-                    navigate("/login");
-                  } else if (user.role === "employer") {
-                    navigate("/employer/workers");
-                  } else {
-                    navigate("/login");
-                  }
+                  if (!user) navigate("/login");
+                  else if (user.role === "employer") navigate("/employer/workers");
+                  else navigate("/login");
                 };
 
                 return (
@@ -317,11 +406,13 @@ export default function Home() {
                     {/* Header */}
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-sm shrink-0">
-                        {initials}
+                        {workerInitials}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-black text-sm text-[#0F172A] truncate">{name}</div>
-                        <div className="text-xs text-slate-400">📍 {city}</div>
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                          <MapPin size={11} /> {city}
+                        </div>
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                         badge === "Available" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"
@@ -333,11 +424,14 @@ export default function Home() {
                     {/* Services */}
                     {serviceNames.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
-                        {serviceNames.map((s, i) => (
-                          <span key={i} className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
-                            {SERVICE_ICONS[s] || "🔧"} {s}
-                          </span>
-                        ))}
+                        {serviceNames.map((s, i) => {
+                          const SvcIcon = SERVICE_ICONS[s] || DEFAULT_SERVICE_ICON;
+                          return (
+                            <span key={i} className="flex items-center gap-1 text-[11px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
+                              <SvcIcon size={11} /> {s}
+                            </span>
+                          );
+                        })}
                         {employmentType && (
                           <span className="text-[11px] font-semibold bg-teal-50 text-teal-600 px-2.5 py-0.5 rounded-full">
                             {employmentType}
@@ -350,11 +444,14 @@ export default function Home() {
                     <div className="flex items-center gap-3 text-xs text-slate-400">
                       {rating && (
                         <span className="flex items-center gap-1">
-                          <span className="text-yellow-400">★</span>
+                          <Star size={12} className="text-yellow-400 fill-yellow-400" />
                           <span className="font-bold text-slate-600">{rating}</span>
                         </span>
                       )}
-                      <span>{jobs} {t("workers.jobs_done")}</span>
+                      <span className="flex items-center gap-1">
+                        <Briefcase size={11} />
+                        {jobs} {t("workers.jobs_done")}
+                      </span>
                     </div>
 
                     {/* Hire Button */}
@@ -362,7 +459,7 @@ export default function Home() {
                       onClick={handleHire}
                       className="mt-auto w-full bg-[#0F172A] hover:bg-teal-600 text-white text-sm font-bold py-2.5 rounded-xl border-none cursor-pointer transition-colors"
                     >
-                      {user?.role === "employer" ? t("workers.hire_btn") : t("workers.login_to_hire")}
+                      {user?.role === "employer" ? t("workers.hire_btn") : t("workers.hire")}
                     </button>
                   </div>
                 );
@@ -384,10 +481,12 @@ export default function Home() {
             {REVIEW_KEYS.map(({ name, roleKey, textKey, stars }) => (
               <div key={name} className="bg-white rounded-2xl p-6 text-left shadow-sm border border-slate-100 relative">
                 <div className="absolute top-6 right-6">
-                    <SpeakerButton text={`${t(textKey)}. Reviewed by ${name}, ${t(roleKey)}`} />
+                  <SpeakerButton text={`${t(textKey)}. Reviewed by ${name}, ${t(roleKey)}`} />
                 </div>
                 <div className="flex gap-0.5 mb-3">
-                  {Array(stars).fill("★").map((s, i) => <span key={i} className="text-yellow-400 text-sm">{s}</span>)}
+                  {Array(stars).fill(null).map((_, i) => (
+                    <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
+                  ))}
                 </div>
                 <p className="text-slate-600 text-sm leading-relaxed mb-4 italic">"{t(textKey)}"</p>
                 <div>
@@ -412,7 +511,10 @@ export default function Home() {
             {FAQS.map(({ qKey, aKey }, i) => (
               <div key={i} className="border border-slate-200 rounded-2xl overflow-hidden">
                 <div className="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-slate-50 transition-colors">
-                  <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="text-left font-semibold text-sm text-[#0F172A] border-none bg-transparent cursor-pointer flex-1">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="text-left font-semibold text-sm text-[#0F172A] border-none bg-transparent cursor-pointer flex-1"
+                  >
                     {t(qKey)}
                   </button>
                   <div className="flex items-center gap-3">
@@ -441,29 +543,33 @@ export default function Home() {
             </div>
             <p className="text-xs leading-relaxed">{t("footer.tagline")}<br />{t("footer.tagline_sub")}</p>
           </div>
+
           <div>
             <h4 className="text-white font-black text-xs uppercase tracking-widest mb-4">{t("footer.quick_links")}</h4>
             <ul className="text-xs space-y-2 list-none p-0">
-              <li>{t("footer.about_us")}</li>
-              <li>{t("footer.services")}</li>
+              <li className="flex items-center gap-1.5"><Info size={11} /> {t("footer.about_us")}</li>
+              <li className="flex items-center gap-1.5"><Globe size={11} /> {t("footer.services")}</li>
             </ul>
           </div>
+
           <div>
             <h4 className="text-white font-black text-xs uppercase tracking-widest mb-4">{t("footer.support")}</h4>
             <ul className="text-xs space-y-2 list-none p-0">
-              <li>{t("footer.help_center")}</li>
-              <li>{t("footer.terms")}</li>
+              <li className="flex items-center gap-1.5"><LifeBuoy size={11} /> {t("footer.help_center")}</li>
+              <li className="flex items-center gap-1.5"><ScrollText size={11} /> {t("footer.terms")}</li>
             </ul>
           </div>
+
           <div>
             <h4 className="text-white font-black text-xs uppercase tracking-widest mb-4">{t("footer.contact")}</h4>
             <div className="text-xs space-y-2">
-              <p>📍 Lahore, Pakistan</p>
-              <p>✉ support@workbridge.pk</p>
+              <p className="flex items-center gap-1.5"><MapPin size={11} /> Lahore, Pakistan</p>
+              <p className="flex items-center gap-1.5"><Mail size={11} /> support@workbridge.pk</p>
             </div>
           </div>
         </div>
-        <div className="max-w-5xl mx-auto flex flex-col md:row items-center justify-between gap-4">
+
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-xs flex items-center gap-2">
             {t("footer.copyright")} <SpeakerButton text={t("footer.copyright")} />
           </div>

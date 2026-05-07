@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import SpeakerButton from "../../components/ui/SpeakerButton";
 import api from "../../services/api";
+import { Briefcase, AlertCircle } from "lucide-react";
 
 const ROLE_REDIRECT = {
   admin:    "/admin/dashboard",
@@ -50,8 +51,11 @@ export default function Login() {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8 font-sans pt-[72px]">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8">
 
+        {/* Logo icon — replacing 🧰 */}
         <div className="flex justify-center mb-5">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-2xl shadow-md">🧰</div>
+          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
+            <Briefcase size={24} className="text-white" strokeWidth={1.8} />
+          </div>
         </div>
 
         {/* Title */}
@@ -67,14 +71,17 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm text-red-600">
-            {error}
-            {unverifiedPhone && (
-              <button type="button" onClick={resendOtp}
-                className="block mt-1 text-teal-600 font-semibold underline text-xs">
-                {t("login.resend_otp")}
-              </button>
-            )}
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm text-red-600 flex items-start gap-2">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div>
+              {error}
+              {unverifiedPhone && (
+                <button type="button" onClick={resendOtp}
+                  className="block mt-1 text-teal-600 font-semibold underline text-xs">
+                  {t("login.resend_otp")}
+                </button>
+              )}
+            </div>
           </div>
         )}
 
