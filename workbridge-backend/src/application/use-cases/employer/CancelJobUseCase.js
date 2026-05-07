@@ -8,8 +8,8 @@ class CancelJobUseCase {
 
   async execute({ jobId, employerId }) {
     const job = await this.jobRepository.findById(jobId);
-    if (!job)                                                   throw new AppError("Job not found", 404);
-    if (job.employerId.toString() !== employerId)               throw new AppError("Unauthorized", 403);
+    if (!job)                                                        throw new AppError("Job not found", 404);
+    if (job.employerId.toString() !== employerId.toString())         throw new AppError("Unauthorized", 403);
     if (job.status !== "Requested")
       throw new AppError("Job can only be cancelled while status is Requested", 400);
 
@@ -17,7 +17,6 @@ class CancelJobUseCase {
       jobId, "Cancelled", employerId, { cancelledByEmployerAt: new Date() }
     );
 
-    // FR20: notify worker of cancellation
     await this.notificationRepository.save({
       userId:       job.workerId,
       type:         "job_cancelled",

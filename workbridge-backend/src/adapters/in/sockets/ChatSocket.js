@@ -16,6 +16,10 @@ class ChatSocket {
     });
 
     io.on("connection", (socket) => {
+      // ✅ Each user joins their own private room for targeted notifications
+      const userId = socket.user?.userId;
+      if (userId) socket.join(`user_${userId}`);
+
       socket.on("join_job", (jobId) => socket.join(`job_${jobId}`));
 
       socket.on("send_message", async (data) => {

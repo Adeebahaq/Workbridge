@@ -5,7 +5,7 @@ import {
   Clock, Calendar, CalendarDays, CalendarRange,
   MapPin, Star, Briefcase, CheckCircle2, XCircle,
   AlertCircle, Bell, ChevronDown, ChevronUp,
-  Banknote, Timer, TrendingUp, User
+  Banknote, Timer, TrendingUp, User, PlayCircle
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,11 +215,18 @@ function CostBreakdownBox({ durationLabel, breakdown, totalCost, hiringType, sta
 // ─────────────────────────────────────────────────────────────────────────────
 // JobCard
 // ─────────────────────────────────────────────────────────────────────────────
-function JobCard({ job, onAccept, onReject, onMarkDone, loading }) {
+function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
   const [expanded, setExpanded] = useState(false);
 
-  const isNew    = job.status === "Requested";
-  const isActive = job.status === "In Progress";
+  const isNew        = job.status === "Requested";
+  const isAccepted   = job.status === "Accepted";
+  const isActive     = job.status === "In Progress";
+  const jobDatePassed = (() => {
+    if (!job.jobDate) return false;
+    const today  = new Date(); today.setHours(0, 0, 0, 0);
+    const jobDay = new Date(job.jobDate); jobDay.setHours(0, 0, 0, 0);
+    return today >= jobDay;
+  })();
 
   const HiringIcon = HIRING_ICON[job.hiringType] || Briefcase;
   const { durationLabel, breakdown, totalCost, totalDays } = getDurationAndBreakdown(job);
@@ -291,7 +298,7 @@ function JobCard({ job, onAccept, onReject, onMarkDone, loading }) {
       </div>
 
       {/* ── Action buttons ── */}
-      {(isNew || isActive) && (
+      {(isNew || isAccepted || isActive) && (
         <div className="flex gap-2 mt-4">
           {isNew && (
             <>
@@ -304,6 +311,17 @@ function JobCard({ job, onAccept, onReject, onMarkDone, loading }) {
                 <XCircle size={13} /> Reject
               </button>
             </>
+          )}
+          {isAccepted && (
+            <div className="flex flex-col gap-1">
+              <button disabled={loading || !jobDatePassed} onClick={() => onStartJob(job._id)}
+                className="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                <PlayCircle size={13} /> Start Job
+              </button>
+              {!jobDatePassed && (
+                <p className="text-[10px] text-slate-400 text-center">Available on {fmt(job.jobDate)}</p>
+              )}
+            </div>
           )}
           {isActive && (
             <button disabled={loading} onClick={() => onMarkDone(job._id)}
@@ -379,7 +397,7 @@ function JobCard({ job, onAccept, onReject, onMarkDone, loading }) {
 // WorkerDashboard
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WorkerDashboard() {
-  const { jobs, fetchJobs, acceptJob, rejectJob, markDone } = useJobManagement();
+  const { jobs, fetchJobs, acceptJob, rejectJob, startJob, markDone } = useJobManagement();
   const [profile, setProfile]           = useState(null);
   const [tab, setTab]                   = useState("All");
   const [loading, setLoading]           = useState(false);
@@ -406,6 +424,13 @@ export default function WorkerDashboard() {
   };
 
   const handleReject = (job) => setRejectTarget(job);
+
+  const handleStartJob = async (id) => {
+    setLoading(true);
+    try   { await startJob(id); await fetchJobs(); showToast("Job started! Mark as done when finished."); }
+    catch (e) { showToast(e.message || "Failed", "error"); }
+    finally   { setLoading(false); }
+  };
 
   const handleRejectConfirm = async (reason) => {
     setLoading(true);
@@ -473,7 +498,7 @@ export default function WorkerDashboard() {
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                   <span className="flex items-center gap-1"><MapPin size={10} />{profile?.preferredCity || "—"}</span>
                   <span className="flex items-center gap-1"><Star size={10} className="text-amber-400" />{profile?.averageRating?.toFixed(1) || "0.0"}</span>
-                  <span className="flex items-center gap-1"><Briefcase size={10} />{profile?.totalCompletedJobs || 0} Jobs</span>
+                  <span className="flex items-center gap-1"><Briefcase size={10} />{jobs.filter(j => j.status === "Completed").length} Jobs</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {profile?.services?.map(s => typeof s === "object" ? s.name : "").filter(Boolean).join(", ") || ""}
@@ -555,6 +580,7 @@ export default function WorkerDashboard() {
                 job={job}
                 onAccept={handleAccept}
                 onReject={handleReject}
+                onStartJob={handleStartJob}
                 onMarkDone={handleMarkDone}
                 loading={loading}
               />

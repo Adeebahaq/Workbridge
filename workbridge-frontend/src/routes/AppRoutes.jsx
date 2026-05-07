@@ -11,6 +11,7 @@ import WorkerDashboard       from "../pages/worker/Dashboard";
 import WorkerProfile         from "../pages/worker/Profile";
 import Availability          from "../pages/worker/Availability";
 import WorkerNotifications   from "../pages/worker/Notifications";
+import WorkerRatings         from "../pages/worker/Ratings";
 import FindWorkers           from "../pages/employer/FindWorkers";
 import EmployerDashboard     from "../pages/employer/Dashboard";
 import JobRequests           from "../pages/employer/JobRequests";
@@ -55,16 +56,16 @@ export default function AppRoutes() {
       <Route path="/worker/profile"       element={<PrivateRoute role="worker"><WorkerProfile /></PrivateRoute>} />
       <Route path="/worker/availability"  element={<PrivateRoute role="worker"><Availability /></PrivateRoute>} />
       <Route path="/worker/notifications" element={<PrivateRoute role="worker"><WorkerNotifications /></PrivateRoute>} />
+      <Route path="/worker/ratings"       element={<PrivateRoute role="worker"><WorkerRatings /></PrivateRoute>} />
 
       {/* Employer routes */}
-      <Route path="/employer/dashboard"      element={<PrivateRoute role="employer"><EmployerDashboard /></PrivateRoute>} />
-      <Route path="/employer/workers"        element={<PrivateRoute role="employer"><FindWorkers /></PrivateRoute>} />
-      <Route path="/employer/jobs"           element={<PrivateRoute role="employer"><JobRequests /></PrivateRoute>} />
-      <Route path="/employer/chat"           element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />
-      <Route path="/employer/chat/:jobId"    element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />
-      <Route path="/employer/notifications"  element={<PrivateRoute role="employer"><EmployerNotifications /></PrivateRoute>} />
+      <Route path="/employer/dashboard"     element={<PrivateRoute role="employer"><EmployerDashboard /></PrivateRoute>} />
+      <Route path="/employer/workers"       element={<PrivateRoute role="employer"><FindWorkers /></PrivateRoute>} />
+      <Route path="/employer/jobs"          element={<PrivateRoute role="employer"><JobRequests /></PrivateRoute>} />
+      <Route path="/employer/chat"          element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />
+      <Route path="/employer/chat/:jobId"   element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />
+      <Route path="/employer/notifications" element={<PrivateRoute role="employer"><EmployerNotifications /></PrivateRoute>} />
 
-      {/* Old redirect: /employer/messages → /employer/chat */}
       <Route path="/employer/messages" element={<Navigate to="/employer/chat" replace />} />
 
       {/* Admin */}

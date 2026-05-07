@@ -17,9 +17,10 @@ class SendJobRequestUseCase {
     if (["Weekly", "Monthly"].includes(hiringType) && (!startDate || !endDate))
       throw new AppError("startDate and endDate are required for Weekly/Monthly hiring", 400);
 
-    const jobDateObj = new Date(jobDate);
-    if (jobDateObj <= new Date())
-      throw new AppError("Job date must be in the future", 400);
+  const jobDateObj = new Date(jobDate);
+const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+if (jobDateObj < todayStart)
+  throw new AppError("Job date cannot be in the past", 400);
 
     const worker = await this.workerRepository.findByUserId(workerId);
     if (!worker || worker.status !== "Active")

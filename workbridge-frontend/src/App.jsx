@@ -5,6 +5,7 @@ import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./components/layout/Navbar";
+import NotificationToast from "./components/common/NotificationToast";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,6 +32,8 @@ function AppShell() {
       <ScrollToTop />
       {/* Navbar only shows on public/guest pages — hides itself inside /worker, /employer, /admin */}
       <Navbar />
+      {/* ✅ Global real-time toast — shows for both worker and employer */}
+      <NotificationToast />
       <AppRoutes />
     </>
   );
