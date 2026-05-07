@@ -10,7 +10,6 @@ export default function WorkerChat() {
   const { jobId }        = useParams();
   const navigate         = useNavigate();
   const { user }         = useAuth();
-  const { messages, send } = useChat(jobId || "");
   const { jobs, fetchJobs } = useJobManagement();
 
   const [text, setText]       = useState("");
@@ -18,16 +17,31 @@ export default function WorkerChat() {
   const bottomRef = useRef(null);
 
   useEffect(()=>{ fetchJobs(); },[]);
+
+  const chatJobs = jobs.filter(j=>["Accepted","In Progress","Awaiting Confirmation","Completed"].includes(j.status));
+
+  // Deduplicate by employer
+  const seenEmployers = new Set();
+  const uniqueChatJobs = chatJobs.filter(j => {
+    const eid = String(j.employerId?._id || j.employerId);
+    if (seenEmployers.has(eid)) return false;
+    seenEmployers.add(eid);
+    return true;
+  });
+
+  const currentJob = chatJobs.find(j => j._id === activeJob);
+  const employerId = currentJob?.employerId?._id || currentJob?.employerId;
+
+  const { messages, send } = useChat(employerId ? String(employerId) : "");
+
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
 
- const handleSend = () => {
+  const handleSend = () => {
   if (!text.trim() || !activeJob) return;
   const receiverId = currentJob?.employerId?._id || currentJob?.employerId;
   send(receiverId, text.trim());
   setText("");
 };
-
-  const chatJobs = jobs.filter(j=>["Accepted","In Progress","Awaiting Confirmation","Completed"].includes(j.status));
 
   const getEmployerName = (job) => {
     const name = job.employerId?.fullName || job.employerId?.name || job.employerId;
@@ -35,7 +49,6 @@ export default function WorkerChat() {
   };
   const getInitials = (name="") => name.split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase() || "E";
 
-  const currentJob = chatJobs.find(j => j._id === activeJob);
   const employerName = currentJob ? getEmployerName(currentJob) : "Employer";
 
   return (
@@ -47,14 +60,14 @@ export default function WorkerChat() {
           <h2 className="font-black text-slate-800 text-sm">💬 Messages</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {chatJobs.length === 0 && (
+          {uniqueChatJobs.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-slate-400 text-center">
               <span className="text-3xl mb-2">💬</span>
               <p className="text-xs font-semibold">No active chats</p>
               <p className="text-xs mt-1">Accept a job to start chatting</p>
             </div>
           )}
-          {chatJobs.map(j => {
+          {uniqueChatJobs.map(j => {
             const ename = getEmployerName(j);
             const einit = getInitials(ename);
             const isActive = j._id === activeJob;
@@ -70,7 +83,7 @@ export default function WorkerChat() {
                   <p className={`text-xs font-bold truncate ${isActive?"text-teal-700":"text-slate-700"}`}>{ename}</p>
                   <p className="text-[10px] text-slate-400 truncate">{j.hiringType} · {j.serviceId?.name||"Service"}</p>
                 </div>
-                {lastMsg && <span className="text-[10px] text-slate-400 shrink-0">{fmtTime(lastMsg.createdAt)}</span>}
+                {lastMsg && <span className="text-[10px] text-slate-400 shrink-0">{fmtTime(lastMsg.sentAt)}</span>}
               </button>
             );
           })}
@@ -117,7 +130,7 @@ export default function WorkerChat() {
                   {!isMine && <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-black text-[10px] mr-2 mt-1 shrink-0">{getInitials(employerName)}</div>}
                   <div className={`max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine?"bg-[#0F172A] text-white rounded-br-sm":"bg-white shadow-sm text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
                     {m.text}
-                    <p className="text-[10px] mt-1 text-slate-400">{fmtTime(m.createdAt)}</p>
+                    <p className="text-[10px] mt-1 opacity-60">{fmtTime(m.sentAt)}</p>
                   </div>
                 </div>
               );
