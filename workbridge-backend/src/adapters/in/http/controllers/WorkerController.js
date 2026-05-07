@@ -6,15 +6,23 @@ class WorkerController {
     updateAvailabilityUseCase,
     acceptJobUseCase,
     rejectJobUseCase,
+    startJobUseCase,
     markJobDoneUseCase,
     verifyWorkerUseCase,
+    getWorkerRatingsUseCase,
+    getWorkerNotificationsUseCase,
+    markNotificationReadUseCase,
   }) {
-    this.registerWorkerUseCase     = registerWorkerUseCase;
-    this.updateAvailabilityUseCase = updateAvailabilityUseCase;
-    this.acceptJobUseCase          = acceptJobUseCase;
-    this.rejectJobUseCase          = rejectJobUseCase;
-    this.markJobDoneUseCase        = markJobDoneUseCase;
-    this.verifyWorkerUseCase       = verifyWorkerUseCase;
+    this.registerWorkerUseCase          = registerWorkerUseCase;
+    this.updateAvailabilityUseCase      = updateAvailabilityUseCase;
+    this.acceptJobUseCase               = acceptJobUseCase;
+    this.rejectJobUseCase               = rejectJobUseCase;
+    this.startJobUseCase                = startJobUseCase;
+    this.markJobDoneUseCase             = markJobDoneUseCase;
+    this.verifyWorkerUseCase            = verifyWorkerUseCase;
+    this.getWorkerRatingsUseCase        = getWorkerRatingsUseCase;
+    this.getWorkerNotificationsUseCase  = getWorkerNotificationsUseCase;
+    this.markNotificationReadUseCase    = markNotificationReadUseCase;
   }
 
   async register(req, res, next) {
@@ -102,12 +110,53 @@ class WorkerController {
     } catch (e) { next(e); }
   }
 
+  async startJob(req, res, next) {
+    try {
+      res.json(await this.startJobUseCase.execute({
+        jobId:    req.params.jobId,
+        workerId: req.user.userId,
+      }));
+    } catch (e) { next(e); }
+  }
+
   async markJobDone(req, res, next) {
     try {
       res.json(await this.markJobDoneUseCase.execute({
         jobId:    req.params.jobId,
         workerId: req.user.userId,
       }));
+    } catch (e) { next(e); }
+  }
+
+  // ── NEW: Worker sees their own ratings ───────────────────────────────────
+  async getMyRatings(req, res, next) {
+    try {
+      res.json(await this.getWorkerRatingsUseCase.execute({ userId: req.user.userId }));
+    } catch (e) { next(e); }
+  }
+
+  // ── NEW: Worker sees their notifications (including rating_received) ─────
+  async getNotifications(req, res, next) {
+    try {
+      res.json(await this.getWorkerNotificationsUseCase.execute({ userId: req.user.userId }));
+    } catch (e) { next(e); }
+  }
+
+  // ── NEW: Worker marks a notification as read ─────────────────────────────
+  async markNotificationRead(req, res, next) {
+    try {
+      res.json(await this.markNotificationReadUseCase.execute({
+        notificationId: req.params.notificationId,
+        userId: req.user.userId,
+      }));
+    } catch (e) { next(e); }
+  }
+
+  // ── NEW: Worker marks all notifications as read ──────────────────────────
+  async markAllNotificationsRead(req, res, next) {
+    try {
+      await req.app.locals.notificationRepo?.markAllRead(req.user.userId);
+      res.json({ message: "All notifications marked as read" });
     } catch (e) { next(e); }
   }
 }

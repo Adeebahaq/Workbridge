@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import api from "../../services/api";
+import {
+  Home, Car, Leaf, Baby, ChefHat, Zap, Wrench, Shield,
+  Sparkles, Shirt, CarFront, HeartHandshake,
+  X, Upload, CheckCircle, AlertCircle, Check,
+} from "lucide-react";
 
-// ─── ENUMS — must match WorkerRegister + backend exactly ─────────────────────
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
 const DAYS_FULL  = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const CITIES     = ["Lahore","Karachi","Islamabad","Rawalpindi","Faisalabad","Multan","Peshawar","Quetta"];
 const EMP_TYPE   = ["Full-time","Part-time","On-call/Daily Basis"];
-
-// These strings MUST match WorkerRegister's en/translation.json values:
-//   hours_morning   → "Morning (6 AM - 2 PM)"
-//   hours_afternoon → "Afternoon (12 PM - 6 PM)"
-//   hours_evening   → "Evening (4 PM - 10 PM)"
-//   hours_flexible  → "Flexible"
 const WORKING_HOURS = [
   "Morning (6 AM - 2 PM)",
   "Afternoon (12 PM - 6 PM)",
@@ -34,12 +33,26 @@ const FALLBACK_SERVICES = [
   { _id: "elderly",   name: "Elderly Care" },
 ];
 
-const SERVICE_ICONS = {
-  "Domestic Helpers": "🏠", "Drivers": "🚗",       "Gardeners": "🌿",
-  "Babysitters": "👶",      "Cooks": "🍳",          "Electricians": "⚡",
-  "Plumbers": "🔧",         "Security Guards": "🛡️", "House Cleaning": "🧹",
-  "Laundry/Ironing": "👔",  "Car Washing": "🚙",    "Elderly Care": "👴",
+// Lucide icon map keyed by service name
+const SERVICE_ICON_MAP = {
+  "Domestic Helpers": Home,
+  "Drivers":          Car,
+  "Gardeners":        Leaf,
+  "Babysitters":      Baby,
+  "Cooks":            ChefHat,
+  "Electricians":     Zap,
+  "Plumbers":         Wrench,
+  "Security Guards":  Shield,
+  "House Cleaning":   Sparkles,
+  "Laundry/Ironing":  Shirt,
+  "Car Washing":      CarFront,
+  "Elderly Care":     HeartHandshake,
 };
+
+function ServiceIcon({ name, active }) {
+  const Icon = SERVICE_ICON_MAP[name] || Wrench;
+  return <Icon size={20} strokeWidth={1.8} className={active ? "text-teal-600" : "text-slate-400"} />;
+}
 
 function SectionTitle({ children }) {
   return (
@@ -81,22 +94,22 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
     }));
 
   const validate = () => {
-    if (!form.fullName.trim())           return "Full name is required.";
-    if (!form.fatherSpouseName.trim())   return "Father/Spouse name is required.";
-    if (!form.dateOfBirth)               return "Date of birth is required.";
-    if (!form.cnicNumber.trim())         return "CNIC number is required.";
+    if (!form.fullName.trim())         return "Full name is required.";
+    if (!form.fatherSpouseName.trim()) return "Father/Spouse name is required.";
+    if (!form.dateOfBirth)             return "Date of birth is required.";
+    if (!form.cnicNumber.trim())       return "CNIC number is required.";
     if (!/^[0-9]{5}-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber))
-                                         return "CNIC format must be: 35202-XXXXXXX-X";
-    if (!form.phone.trim())              return "Phone number is required.";
+                                       return "CNIC format must be: 35202-XXXXXXX-X";
+    if (!form.phone.trim())            return "Phone number is required.";
     if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
-                                         return "Phone format must be: 03XX-XXXXXXX";
-    if (!form.currentAddress.trim())     return "Address is required.";
-    if (!form.password)                  return "Password is required.";
-    if (form.password.length < 8)        return "Password must be at least 8 characters.";
+                                       return "Phone format must be: 03XX-XXXXXXX";
+    if (!form.currentAddress.trim())   return "Address is required.";
+    if (!form.password)                return "Password is required.";
+    if (form.password.length < 8)      return "Password must be at least 8 characters.";
     if (form.password !== form.confirmPassword) return "Passwords do not match.";
-    if (form.services.length === 0)      return "Select at least one service.";
+    if (form.services.length === 0)    return "Select at least one service.";
     if (form.daysAvailable.length === 0) return "Select at least one available day.";
-    if (!cnicFront)                      return "CNIC front image is required.";
+    if (!cnicFront)                    return "CNIC front image is required.";
     return null;
   };
 
@@ -110,23 +123,16 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
     try {
       const payload = new FormData();
 
-      // Scalar fields
       ["fullName","phone","password","confirmPassword","cnicNumber",
        "currentAddress","fatherSpouseName","dateOfBirth","gender",
        "maritalStatus","employmentType","preferredCity","maxTravelDistance",
       ].forEach(k => payload.append(k, form[k]));
 
-      // Array fields — each value as a separate entry (matches WorkerRegister)
       ["services","daysAvailable","preferredWorkingHours"].forEach(k => {
         form[k].forEach(item => payload.append(k, item));
       });
 
-      // CNIC image
       payload.append("cnicFrontImage", cnicFront);
-
-      // adminCreated appended LAST — ensures multipart parser always sees it.
-      // Backend RegisterWorkerUseCase checks: trimmed.adminCreated === "true"
-      // This sets isPhoneVerified: true and status: "Active" on the new account.
       payload.append("adminCreated", "true");
 
       await api.post("/workers/register", payload);
@@ -143,17 +149,29 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
   const sel = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 bg-white transition-all";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-[#0F172A] p-5 text-white shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-black">Create Worker Account</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Account will be automatically verified — no admin review needed.</p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                Account will be automatically verified — no admin review needed.
+              </p>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all">✕</button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
 
@@ -161,7 +179,10 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
           <div className="p-6 space-y-6">
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">⚠️ {error}</div>
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+                <AlertCircle size={16} className="shrink-0" />
+                {error}
+              </div>
             )}
 
             {/* Personal Information */}
@@ -222,11 +243,16 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                 {serviceList.map(s => {
                   const active = form.services.includes(s._id);
                   return (
-                    <button key={s._id} type="button" onClick={() => toggleArr("services", s._id)}
+                    <button
+                      key={s._id} type="button"
+                      onClick={() => toggleArr("services", s._id)}
                       className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border-2 text-xs font-bold text-center transition-all ${
-                        active ? "border-teal-500 bg-teal-50 text-teal-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                      }`}>
-                      <span className="text-xl">{SERVICE_ICONS[s.name] || "🔧"}</span>
+                        active
+                          ? "border-teal-500 bg-teal-50 text-teal-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <ServiceIcon name={s.name} active={active} />
                       <span className="leading-tight">{s.name}</span>
                     </button>
                   );
@@ -246,10 +272,15 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                         const full = DAYS_FULL[i];
                         const active = form.daysAvailable.includes(full);
                         return (
-                          <button key={d} type="button" onClick={() => toggleArr("daysAvailable", full)}
+                          <button
+                            key={d} type="button"
+                            onClick={() => toggleArr("daysAvailable", full)}
                             className={`w-10 h-10 rounded-lg text-xs font-bold border-2 transition-all ${
-                              active ? "bg-teal-500 border-teal-500 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                            }`}>
+                              active
+                                ? "bg-teal-500 border-teal-500 text-white"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                            }`}
+                          >
                             {d}
                           </button>
                         );
@@ -262,11 +293,20 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                       {WORKING_HOURS.map(h => {
                         const active = form.preferredWorkingHours.includes(h);
                         return (
-                          <button key={h} type="button" onClick={() => toggleArr("preferredWorkingHours", h)}
-                            className={`px-3 py-2 rounded-xl border-2 text-xs font-bold text-left transition-all ${
-                              active ? "border-teal-500 bg-teal-50 text-teal-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                            }`}>
-                            {active ? "✓ " : ""}{h}
+                          <button
+                            key={h} type="button"
+                            onClick={() => toggleArr("preferredWorkingHours", h)}
+                            className={`px-3 py-2 rounded-xl border-2 text-xs font-bold text-left flex items-center gap-2 transition-all ${
+                              active
+                                ? "border-teal-500 bg-teal-50 text-teal-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            }`}
+                          >
+                            {active
+                              ? <Check size={13} className="shrink-0" />
+                              : <span className="w-[13px]" />
+                            }
+                            {h}
                           </button>
                         );
                       })}
@@ -290,7 +330,8 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                     <label className="text-xs font-bold text-slate-600 mb-1 block">
                       Max Travel Distance: <span className="text-teal-600">{form.maxTravelDistance} km</span>
                     </label>
-                    <input type="range" min={1} max={100} step={1}
+                    <input
+                      type="range" min={1} max={100} step={1}
                       value={form.maxTravelDistance}
                       onChange={e => set("maxTravelDistance", Number(e.target.value))}
                       className="w-full accent-teal-500"
@@ -309,16 +350,16 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
               <label className="block border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
                 <input type="file" accept="image/*" className="hidden" onChange={e => setCnicFront(e.target.files[0])} />
                 {cnicFront ? (
-                  <div>
-                    <div className="text-3xl mb-2">✅</div>
+                  <div className="flex flex-col items-center gap-2">
+                    <CheckCircle size={32} className="text-teal-500" />
                     <p className="text-sm font-semibold text-teal-600">{cnicFront.name}</p>
-                    <p className="text-xs text-slate-400 mt-1">Click to change</p>
+                    <p className="text-xs text-slate-400">Click to change</p>
                   </div>
                 ) : (
-                  <div>
-                    <div className="text-2xl mb-2 text-slate-300">📷</div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload size={28} className="text-slate-300" />
                     <p className="text-sm font-bold text-teal-600">Click to upload CNIC front image</p>
-                    <p className="text-xs text-slate-400 mt-1">JPG, PNG or WEBP</p>
+                    <p className="text-xs text-slate-400">JPG, PNG or WEBP</p>
                   </div>
                 )}
               </label>
@@ -327,11 +368,20 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
 
           {/* Footer */}
           <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
-            <button type="button" onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm hover:bg-slate-100 transition-all">
+            <button
+              type="button" onClick={onClose}
+              className="flex-1 border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm hover:bg-slate-100 transition-all"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-              {loading ? "Creating…" : "✓ Create & Verify Worker"}
+            <button
+              type="submit" disabled={loading}
+              className="flex-1 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+            >
+              {loading
+                ? "Creating…"
+                : <><CheckCircle size={16} /> Create & Verify Worker</>
+              }
             </button>
           </div>
         </form>

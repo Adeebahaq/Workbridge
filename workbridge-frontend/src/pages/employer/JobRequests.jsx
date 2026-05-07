@@ -121,7 +121,6 @@ export default function JobRequests() {
   const [tab,     setTab]     = useState("all");
   const [rateJob, setRateJob] = useState(null);
   const [toast,   setToast]   = useState({ show: false, msg: "", type: "success" });
-  const [rated,   setRated]   = useState(new Set()); // track already-rated jobs this session
 
   useEffect(() => { fetchJobs(); }, []);
 
@@ -141,9 +140,7 @@ export default function JobRequests() {
   };
 
   const handleRate = async (jobId, workerId, rating, feedback) => {
-    await api.post("/employers/ratings", { jobId, workerId, stars: rating, feedback });
-    setRated(prev => new Set([...prev, jobId]));
-    await fetchJobs();
+    await api.post("/employers/ratings", { jobId, workerId, stars: rating, feedback });    await fetchJobs();
     showToast("⭐ Rating submitted successfully!");
   };
 
@@ -236,7 +233,7 @@ export default function JobRequests() {
           const svcName     = j.serviceId?.name || "Service";
           const cost        = j.estimatedCost;
           const canChat     = ["Accepted", "In Progress", "Awaiting Confirmation"].includes(j.status);
-          const canRate     = j.status === "Completed" && !rated.has(j._id);
+          const canRate     = j.status === "Completed" && !j.hasRated;
           const canConfirm  = j.status === "Awaiting Confirmation";
           const canCancel   = j.status === "Requested";
 

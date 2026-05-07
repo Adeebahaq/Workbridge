@@ -1,3 +1,3 @@
-export const getToken    = () => localStorage.getItem("wb_token");
-export const setToken    = (t) => localStorage.setItem("wb_token", t);
-export const removeToken = () => localStorage.removeItem("wb_token");
+export const getToken    = () => sessionStorage.getItem("wb_token") || localStorage.getItem("wb_token");
+export const setToken    = (t) => { sessionStorage.setItem("wb_token", t); localStorage.setItem("wb_token", t); };
+export const removeToken = () => { sessionStorage.removeItem("wb_token"); localStorage.removeItem("wb_token"); };

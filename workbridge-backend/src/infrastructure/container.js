@@ -1,7 +1,5 @@
 // infrastructure/container.js
-// Composition Root — the ONLY place that wires concrete adapters to use cases.
 
-// ── Out-adapters (repositories) ─────────────────────────────────────────────
 const MongoUserRepository         = require("../adapters/out/persistence/mongoose/repositories/MongoUserRepository");
 const MongoWorkerRepository       = require("../adapters/out/persistence/mongoose/repositories/MongoWorkerRepository");
 const MongoEmployerRepository     = require("../adapters/out/persistence/mongoose/repositories/MongoEmployerRepository");
@@ -14,11 +12,9 @@ const MongoAdminLogRepository     = require("../adapters/out/persistence/mongoos
 const MongoDashboardRepository    = require("../adapters/out/persistence/mongoose/repositories/MongoDashboardRepository");
 const MongoServiceTypeRepository  = require("../adapters/out/persistence/mongoose/repositories/MongoServiceTypeRepository");
 
-// ── Out-adapters (external services) ────────────────────────────────────────
 const WhatsAppOtpAdapter          = require("../adapters/out/external/WhatsAppOtpAdapter");
 const WhatsAppNotificationAdapter = require("../adapters/out/external/WhatsAppNotificationAdapter");
 
-// ── Instantiate adapters ─────────────────────────────────────────────────────
 const userRepo         = new MongoUserRepository();
 const workerRepo       = new MongoWorkerRepository();
 const employerRepo     = new MongoEmployerRepository();
@@ -33,7 +29,6 @@ const serviceTypeRepo  = new MongoServiceTypeRepository();
 const whatsAppOtp      = new WhatsAppOtpAdapter();
 const whatsAppNotify   = new WhatsAppNotificationAdapter();
 
-// ── Use-case imports ─────────────────────────────────────────────────────────
 const LoginUseCase                     = require("../application/use-cases/auth/LoginUseCase");
 const RegisterEmployerUseCase          = require("../application/use-cases/auth/RegisterEmployerUseCase");
 const VerifyOtpUseCase                 = require("../application/use-cases/auth/VerifyOtpUseCase");
@@ -43,7 +38,10 @@ const UpdateAvailabilityUseCase        = require("../application/use-cases/worke
 const AcceptJobUseCase                 = require("../application/use-cases/worker/AcceptJobUseCase");
 const RejectJobUseCase                 = require("../application/use-cases/worker/RejectJobUseCase");
 const MarkJobDoneUseCase               = require("../application/use-cases/worker/MarkJobDoneUseCase");
+const StartJobUseCase                  = require("../application/use-cases/worker/StartJobUseCase");
 const VerifyWorkerUseCase              = require("../application/use-cases/worker/VerifyWorkerUseCase");
+const GetWorkerRatingsUseCase          = require("../application/use-cases/worker/GetWorkerRatingsUseCase");       // NEW
+const GetWorkerNotificationsUseCase    = require("../application/use-cases/worker/GetWorkerNotificationsUseCase"); // NEW
 
 const SearchWorkersUseCase             = require("../application/use-cases/employer/SearchWorkersUseCase");
 const GetWorkerPublicProfileUseCase    = require("../application/use-cases/employer/GetWorkerPublicProfileUseCase");
@@ -73,22 +71,28 @@ module.exports = {
   resendOtpUseCase:        new ResendOtpUseCase(userRepo, otpRepo, whatsAppOtp),
 
   // worker
-  updateAvailabilityUseCase: new UpdateAvailabilityUseCase(workerRepo),
-  acceptJobUseCase:          new AcceptJobUseCase(jobRepo),
-  rejectJobUseCase:          new RejectJobUseCase(jobRepo),
-  markJobDoneUseCase:        new MarkJobDoneUseCase(jobRepo),
-  verifyWorkerUseCase:       new VerifyWorkerUseCase(workerRepo),
+  updateAvailabilityUseCase:     new UpdateAvailabilityUseCase(workerRepo),
+  acceptJobUseCase:              new AcceptJobUseCase(jobRepo),
+  rejectJobUseCase:              new RejectJobUseCase(jobRepo),
+  startJobUseCase:               new StartJobUseCase(jobRepo),
+  markJobDoneUseCase:            new MarkJobDoneUseCase(jobRepo),
+  verifyWorkerUseCase:           new VerifyWorkerUseCase(workerRepo),
+  getWorkerRatingsUseCase:       new GetWorkerRatingsUseCase(ratingRepo, workerRepo),       // NEW
+  getWorkerNotificationsUseCase: new GetWorkerNotificationsUseCase(notificationRepo),       // NEW
+  acceptJobUseCase:  new AcceptJobUseCase(jobRepo, notificationRepo),
+rejectJobUseCase:  new RejectJobUseCase(jobRepo, notificationRepo),
+startJobUseCase:   new StartJobUseCase(jobRepo, notificationRepo),
+markJobDoneUseCase: new MarkJobDoneUseCase(jobRepo, notificationRepo),
 
   // employer
-  searchWorkersUseCase:           new SearchWorkersUseCase(workerRepo),
-  getWorkerPublicProfileUseCase:  new GetWorkerPublicProfileUseCase(workerRepo, ratingRepo),
-  sendJobRequestUseCase:          new SendJobRequestUseCase(jobRepo, workerRepo, notificationRepo),
-  cancelJobUseCase:               new CancelJobUseCase(jobRepo, notificationRepo),
-  confirmJobUseCase:              new ConfirmJobUseCase(jobRepo, notificationRepo),
-  rateWorkerUseCase:              new RateWorkerUseCase(jobRepo, ratingRepo, workerRepo, notificationRepo),
-  getEmployerProfileUseCase:      new GetEmployerProfileUseCase(userRepo, employerRepo),
-  getEmployerNotificationsUseCase:new GetEmployerNotificationsUseCase(notificationRepo),
-  markNotificationReadUseCase:    new MarkNotificationReadUseCase(notificationRepo),
+  searchWorkersUseCase:            new SearchWorkersUseCase(workerRepo),
+  getWorkerPublicProfileUseCase:   new GetWorkerPublicProfileUseCase(workerRepo, ratingRepo),
+  sendJobRequestUseCase:           new SendJobRequestUseCase(jobRepo, workerRepo, notificationRepo),
+  cancelJobUseCase:                new CancelJobUseCase(jobRepo, notificationRepo),
+  confirmJobUseCase: new ConfirmJobUseCase(jobRepo, notificationRepo, workerRepo),  rateWorkerUseCase:               new RateWorkerUseCase(jobRepo, ratingRepo, workerRepo, notificationRepo),
+  getEmployerProfileUseCase:       new GetEmployerProfileUseCase(userRepo, employerRepo),
+  getEmployerNotificationsUseCase: new GetEmployerNotificationsUseCase(notificationRepo),
+  markNotificationReadUseCase:     new MarkNotificationReadUseCase(notificationRepo),
 
   // admin
   approveWorkerUseCase:       new ApproveWorkerUseCase(workerRepo, adminLogRepo),
@@ -104,7 +108,7 @@ module.exports = {
   getMyJobsUseCase: new GetMyJobsUseCase(jobRepo),
   getJobUseCase:    new GetJobUseCase(jobRepo),
 
-  // repositories (passed directly where needed)
+  // repositories exposed directly
   serviceTypeRepo,
-  notificationRepo,   // ← exposed so controllers can call markAllRead directly
+  notificationRepo,
 };
