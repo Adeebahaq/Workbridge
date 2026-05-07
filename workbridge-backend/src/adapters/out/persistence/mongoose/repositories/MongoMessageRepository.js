@@ -21,6 +21,14 @@ class MongoMessageRepository extends IMessageRepository {
       messageId, { isRead: true, readAt: new Date() }, { new: true }
     ).lean();
   }
+
+  async save({ senderId, receiverId, text, audioUrl, duration, messageType }) {
+  return new Message({
+    participantKey: makeKey(senderId, receiverId),
+    senderId, receiverId, text, audioUrl, duration,
+    messageType: messageType || (audioUrl ? "voice" : "text")
+  }).save();
+}
 }
 
 module.exports = MongoMessageRepository;

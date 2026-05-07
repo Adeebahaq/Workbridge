@@ -23,19 +23,22 @@ class ChatSocket {
       if (userId) socket.join(`user_${userId}`);
 
       socket.on("join_chat", ({ otherUserId }) => {
-        const room = `chat_${makeKey(socket.user.userId, otherUserId)}`;
+        const room = `chat_${makeKey(String(socket.user.userId), String(otherUserId))}`;
         socket.join(room);
       });
 
       socket.on("send_message", async (data) => {
         try {
-          const msg = await this.sendMessageUseCase.execute({
-            senderId:   socket.user.userId,
-            receiverId: data.receiverId,
-            text:       data.text,
-          });
+        const msg = await this.sendMessageUseCase.execute({
+          senderId:    socket.user.userId,
+          receiverId:  data.receiverId,
+          text: data.text || null,
+          audioUrl:    data.audioUrl,
+          duration:    data.duration,
+          messageType: data.messageType,
+        });
 
-          const room = `chat_${makeKey(socket.user.userId, data.receiverId)}`;
+          const room = `chat_${makeKey(String(socket.user.userId), String(data.receiverId))}`;
           io.to(room).emit("new_message", msg);
 
           // ✅ Push toast notification to receiver's personal room
@@ -43,7 +46,7 @@ class ChatSocket {
             _id:    `msg_${msg._id || Date.now()}`,
             type:   "new_message",
             title:  "New Message",
-            body:   msg.text?.length > 80 ? msg.text.slice(0, 80) + "…" : msg.text,
+            body: msg.messageType === "voice" ? "🎙️ Voice message" : (msg.text?.length > 80 ? msg.text.slice(0, 80) + "…" : msg.text),
             sentAt: msg.createdAt || new Date().toISOString(),
             isRead: false,
           });
