@@ -3,7 +3,10 @@ const MessageSchema = new mongoose.Schema(
   { participantKey: { type: String, required: true }, // "smallerId_largerId"
     senderId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    text:       { type: String, required: true, maxlength: 500 },
+    text: { type: String, maxlength: 500, default: "" },
+    audioUrl:    { type: String },
+    duration:    { type: Number },
+    messageType: { type: String, enum: ["text", "voice"], default: "text" },
     isRead:     { type: Boolean, default: false },
     readAt:     { type: Date },
     deleteAfter:{ type: Date } },

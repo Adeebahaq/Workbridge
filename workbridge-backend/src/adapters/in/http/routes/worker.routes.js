@@ -1,7 +1,7 @@
 const { Router }         = require("express");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const { roleMiddleware } = require("../middlewares/role.middleware");
-const upload             = require("../middlewares/upload.middleware");
+const { upload }            = require("../middlewares/upload.middleware");
 const WorkerProfile      = require("../../../out/persistence/mongoose/models/WorkerProfile.model");
 
 module.exports = function(controller) {
