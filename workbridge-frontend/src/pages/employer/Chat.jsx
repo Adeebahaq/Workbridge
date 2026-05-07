@@ -31,8 +31,9 @@ export default function Chat() {
   const currentJob = chatJobs.find(j => j._id === activeJob);
   const workerId   = currentJob?.workerId?._id || currentJob?.workerId;
 
-  const { messages, send, markRead } = useChat(workerId ? String(workerId) : "");
   const currentUserId = String(user?.userId || user?._id);
+  const { messages, send, markRead } = useChat(workerId ? String(workerId) : "", currentUserId);
+  
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
 

@@ -23,7 +23,7 @@ class ChatSocket {
       if (userId) socket.join(`user_${userId}`);
 
       socket.on("join_chat", ({ otherUserId }) => {
-        const room = `chat_${makeKey(socket.user.userId, otherUserId)}`;
+        const room = `chat_${makeKey(String(socket.user.userId), String(otherUserId))}`;
         socket.join(room);
       });
 
@@ -35,7 +35,7 @@ class ChatSocket {
             text:       data.text,
           });
 
-          const room = `chat_${makeKey(socket.user.userId, data.receiverId)}`;
+          const room = `chat_${makeKey(String(socket.user.userId), String(data.receiverId))}`;
           io.to(room).emit("new_message", msg);
 
           // ✅ Push toast notification to receiver's personal room
