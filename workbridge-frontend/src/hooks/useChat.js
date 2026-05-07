@@ -35,10 +35,14 @@ export function useChat(otherUserId, currentUserId) {
 
     socket.on("new_message", (msg) => {
       setMessages(prev => {
-        const filtered = prev.filter(m => {
-          if (m._id?.toString().length <= 15 && m.senderId === currentUserId && m.text === msg.text) return false;
-          return true;
-        });
+        // AFTER
+      const filtered = prev.filter(m => {
+        if (m._id?.toString().length <= 15 && m.senderId === currentUserId) {
+          if (m.messageType === "voice" && msg.messageType === "voice") return false;
+          if (m.text && m.text === msg.text) return false;
+        }
+        return true;
+      });
         if (filtered.find(m => m._id === msg._id)) {
           messageCache[otherUserId] = filtered;
           return filtered;
@@ -69,6 +73,26 @@ export function useChat(otherUserId, currentUserId) {
 
   const markRead = (messageId) => socket.emit("mark_read", { messageId });
 
+  const sendVoice = (receiverId, audioUrl, duration) => {
+  const optimistic = {
+    _id: Date.now().toString(),
+    senderId: currentUserId,
+    receiverId,
+    audioUrl,
+    duration,
+    messageType: "voice",
+    sentAt: new Date(),
+    isRead: false,
+  };
+  setMessages(prev => {
+    const next = [...prev, optimistic];
+    messageCache[otherUserId] = next;
+    return next;
+  });
+  socket.emit("send_message", { receiverId, audioUrl, duration, messageType: "voice" });
+};
+
+
   const send = (receiverId, text) => {
     const optimistic = {
       _id: Date.now().toString(),
@@ -86,5 +110,5 @@ export function useChat(otherUserId, currentUserId) {
     socket.emit("send_message", { receiverId, text });
   };
 
-  return { messages, send, markRead };
+return { messages, send, markRead, sendVoice };
 }
