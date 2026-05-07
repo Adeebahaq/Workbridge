@@ -20,7 +20,6 @@ export default function WorkerChat() {
 
   const chatJobs = jobs.filter(j=>["Accepted","In Progress","Awaiting Confirmation","Completed"].includes(j.status));
 
-  // Deduplicate by employer
   const seenEmployers = new Set();
   const uniqueChatJobs = chatJobs.filter(j => {
     const eid = String(j.employerId?._id || j.employerId);
@@ -32,16 +31,23 @@ export default function WorkerChat() {
   const currentJob = chatJobs.find(j => j._id === activeJob);
   const employerId = currentJob?.employerId?._id || currentJob?.employerId;
 
-  const { messages, send } = useChat(employerId ? String(employerId) : "");
+  const { messages, send, markRead } = useChat(employerId ? String(employerId) : "");
+  const currentUserId = String(user?.userId || user?._id);
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
 
+  useEffect(() => {
+    messages
+      .filter(m => !m.isRead && String(m.receiverId) === currentUserId)
+      .forEach(m => markRead(m._id));
+  }, [messages]);
+
   const handleSend = () => {
-  if (!text.trim() || !activeJob) return;
-  const receiverId = currentJob?.employerId?._id || currentJob?.employerId;
-  send(receiverId, text.trim());
-  setText("");
-};
+    if (!text.trim() || !activeJob) return;
+    const receiverId = currentJob?.employerId?._id || currentJob?.employerId;
+    send(receiverId, text.trim());
+    setText("");
+  };
 
   const getEmployerName = (job) => {
     const name = job.employerId?.fullName || job.employerId?.name || job.employerId;
@@ -124,13 +130,16 @@ export default function WorkerChat() {
               </div>
             )}
             {messages.map((m,i) => {
-              const isMine = m.senderId === user?.userId || m.senderId === user?._id;
+              const isMine = String(m.senderId) === currentUserId;
               return (
                 <div key={i} className={`flex ${isMine?"justify-end":"justify-start"}`}>
                   {!isMine && <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-black text-[10px] mr-2 mt-1 shrink-0">{getInitials(employerName)}</div>}
                   <div className={`max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine?"bg-[#0F172A] text-white rounded-br-sm":"bg-white shadow-sm text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
                     {m.text}
-                    <p className="text-[10px] mt-1 opacity-60">{fmtTime(m.sentAt)}</p>
+                    <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
+                      {fmtTime(m.sentAt)}
+                      {isMine && <span>{m.isRead ? "✓✓" : "✓"}</span>}
+                    </p>
                   </div>
                 </div>
               );
