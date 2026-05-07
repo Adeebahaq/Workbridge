@@ -13,9 +13,10 @@ class ResendOtpUseCase {
     if (!phone) throw new AppError("Phone is required", 400);
 
     const user = await this.userRepository.findByPhone(phone.trim());
-    if (!user) throw new AppError("Phone not registered", 404);
+    if (!user)                  throw new AppError("Phone not registered", 404);
     if (user.isWhatsappVerified) throw new AppError("Phone is already verified", 400);
 
+    // FR4: enforce 60s cooldown before resend
     const existing = await this.otpRepository.findByPhone(phone.trim());
     if (existing && new Date() < new Date(existing.resendAvailableAt)) {
       const seconds = Math.ceil((new Date(existing.resendAvailableAt) - Date.now()) / 1000);
@@ -26,9 +27,11 @@ class ResendOtpUseCase {
 
     const otp     = generateOtp();
     const otpHash = await hashOtp(otp);
+
     await this.otpRepository.save({
-      phone: phone.trim(),
+      phone:             phone.trim(),
       otpHash,
+      attempts:          0,
       expiresAt:         OTP.expiresAt(),
       resendAvailableAt: OTP.resendAvailableAt(),
     });

@@ -100,6 +100,35 @@ export default function WorkerRegister() {
     t("worker_register.step_otp"),
   ];
 
+  // ── Max DOB: user must be at least 18 years old ──────────────────────────
+  const maxDob = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split("T")[0];
+  })();
+
+  // ── Min DOB: user must not be older than 60 years ────────────────────────
+  const minDob = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 60);
+    return d.toISOString().split("T")[0];
+  })();
+
+  // ── Phone formatter: 0300-1234567 ────────────────────────────────────────
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  };
+
+  // ── CNIC formatter: 12345-1234567-1 ──────────────────────────────────────
+  const formatCnic = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 13);
+    if (digits.length <= 5)  return digits;
+    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+  };
+
   useEffect(() => {
     api.get("/services")
       .then(res => {
@@ -143,18 +172,25 @@ export default function WorkerRegister() {
   const validateStep = () => {
     setError("");
     if (step === 0) {
-      if (!form.fullName.trim())         return setError(t("worker_register.err_full_name")), false;
-      if (!form.fatherSpouseName.trim()) return setError(t("worker_register.err_father_name")), false;
-      if (!form.dateOfBirth)             return setError(t("worker_register.err_dob")), false;
-      if (!form.cnicNumber.trim())       return setError(t("worker_register.err_cnic_required")), false;
+      if (!form.fullName.trim())            return setError(t("worker_register.err_full_name")), false;
+      if (/\d/.test(form.fullName))         return setError("Full name must not contain numbers."), false;
+      if (!form.fatherSpouseName.trim())    return setError(t("worker_register.err_father_name")), false;
+      if (!form.dateOfBirth)                return setError(t("worker_register.err_dob")), false;
+      if (new Date(form.dateOfBirth) > new Date(maxDob))
+        return setError("You must be at least 18 years old to register."), false;
+      if (new Date(form.dateOfBirth) < new Date(minDob))
+        return setError("Age must not exceed 60 years."), false;
+      if (!form.cnicNumber.trim())          return setError(t("worker_register.err_cnic_required")), false;
       if (!/^[0-9]{5}-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber))
         return setError(t("worker_register.err_cnic_format")), false;
-      if (!form.phone.trim())            return setError(t("worker_register.err_phone_required")), false;
+      if (!form.phone.trim())               return setError(t("worker_register.err_phone_required")), false;
       if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
         return setError(t("worker_register.err_phone_format")), false;
-      if (!form.currentAddress.trim())   return setError(t("worker_register.err_address")), false;
-      if (!form.password)                return setError(t("worker_register.err_password_required")), false;
-      if (form.password.length < 8)      return setError(t("worker_register.err_password_length")), false;
+      if (!form.currentAddress.trim())      return setError(t("worker_register.err_address")), false;
+      if (!form.password)                   return setError(t("worker_register.err_password_required")), false;
+      if (form.password.length < 8)         return setError(t("worker_register.err_password_length")), false;
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
+        return setError("Password must contain at least one special character."), false;
       if (form.password !== form.confirmPassword) return setError(t("worker_register.err_password_match")), false;
     }
     if (step === 1 && form.services.length === 0)
@@ -216,7 +252,6 @@ export default function WorkerRegister() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          {/* Briefcase replacing 🧰 */}
           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
             <Briefcase size={24} className="text-white" strokeWidth={1.8} />
           </div>
@@ -272,7 +307,23 @@ export default function WorkerRegister() {
               <div className="space-y-4">
                 <div>
                   <LabelRow textKey="worker_register.full_name" required />
-                  <input className={inputCls} placeholder={t("worker_register.full_name_placeholder")} value={form.fullName} onChange={e => set("fullName", e.target.value)} />
+                  <input
+                    className={inputCls}
+                    placeholder={t("worker_register.full_name_placeholder")}
+                    value={form.fullName}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (/\d/.test(val)) {
+                        setError("Numbers are not allowed in full name.");
+                      } else {
+                        setError("");
+                        set("fullName", val);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!/\d/.test(form.fullName)) setError("");
+                    }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -282,7 +333,14 @@ export default function WorkerRegister() {
                   </div>
                   <div>
                     <LabelRow textKey="worker_register.dob" required />
-                    <input className={inputCls} type="date" value={form.dateOfBirth} onChange={e => set("dateOfBirth", e.target.value)} />
+                    <input
+                      className={inputCls}
+                      type="date"
+                      min={minDob}
+                      max={maxDob}
+                      value={form.dateOfBirth}
+                      onChange={e => set("dateOfBirth", e.target.value)}
+                    />
                     <HintRow textKey="worker_register.dob_hint" />
                   </div>
                 </div>
@@ -304,13 +362,25 @@ export default function WorkerRegister() {
 
                 <div>
                   <LabelRow textKey="worker_register.cnic" required />
-                  <input className={inputCls} placeholder="35202-XXXXXXX-X" value={form.cnicNumber} onChange={e => set("cnicNumber", e.target.value)} />
+                  <input
+                    className={inputCls}
+                    placeholder="35202-XXXXXXX-X"
+                    maxLength={15}
+                    value={form.cnicNumber}
+                    onChange={e => set("cnicNumber", formatCnic(e.target.value))}
+                  />
                   <HintRow textKey="worker_register.cnic_hint" />
                 </div>
 
                 <div>
                   <LabelRow textKey="worker_register.phone" required />
-                  <input className={inputCls} placeholder="03XX-XXXXXXX" value={form.phone} onChange={e => set("phone", e.target.value)} />
+                  <input
+                    className={inputCls}
+                    placeholder="03XX-XXXXXXX"
+                    maxLength={12}
+                    value={form.phone}
+                    onChange={e => set("phone", formatPhone(e.target.value))}
+                  />
                   <HintRow textKey="worker_register.phone_hint" />
                 </div>
 
@@ -323,6 +393,9 @@ export default function WorkerRegister() {
                   <div>
                     <LabelRow textKey="worker_register.password" required />
                     <input className={inputCls} type="password" placeholder={t("worker_register.password_placeholder")} value={form.password} onChange={e => set("password", e.target.value)} />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Min 8 chars with at least one special character (!@#$%^&*).
+                    </p>
                   </div>
                   <div>
                     <LabelRow textKey="worker_register.confirm_password" required />
@@ -483,7 +556,6 @@ export default function WorkerRegister() {
                   <input type="file" accept="image/*" className="hidden" onChange={e => setCnicFront(e.target.files[0])} />
                   {cnicFront ? (
                     <div className="flex flex-col items-center gap-2">
-                      {/* CheckCircle replacing ✅ */}
                       <CheckCircle size={36} className="text-teal-500" />
                       <p className="text-sm font-semibold text-teal-600">{cnicFront.name}</p>
                       <div className="flex items-center justify-center gap-1.5">
@@ -493,7 +565,6 @@ export default function WorkerRegister() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
-                      {/* Upload replacing 📷 */}
                       <Upload size={30} className="text-slate-300" />
                       <div className="flex items-center justify-center gap-1.5">
                         <p className="text-sm font-bold text-teal-600">{t("worker_register.click_to_upload")}</p>
@@ -523,7 +594,6 @@ export default function WorkerRegister() {
           {step === 4 && (
             <form onSubmit={verifyOtp}>
               <div className="text-center mb-7">
-                {/* Smartphone replacing 📱 */}
                 <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Smartphone size={30} className="text-white" strokeWidth={1.5} />
                 </div>

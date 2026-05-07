@@ -12,6 +12,13 @@ const ROLE_REDIRECT = {
   employer: "/employer/workers",
 };
 
+// ── Phone formatter: 0300-1234567 ──────────────────────────────────────────
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
 export default function Login() {
   const [form, setForm]                       = useState({ phone: "", password: "" });
   const [error, setError]                     = useState("");
@@ -51,7 +58,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8 font-sans pt-[72px]">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8">
 
-        {/* Logo icon — replacing 🧰 */}
+        {/* Logo icon */}
         <div className="flex justify-center mb-5">
           <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
             <Briefcase size={24} className="text-white" strokeWidth={1.8} />
@@ -93,9 +100,14 @@ export default function Login() {
               <label className="text-sm font-semibold text-slate-700">{t("login.phone_label")}</label>
               <SpeakerButton textKey="login.phone_label" />
             </div>
-            <input type="tel" placeholder={t("login.phone_placeholder")} required
+            <input
+              type="tel"
+              placeholder={t("login.phone_placeholder")}
+              required
+              maxLength={12}
               value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
+              onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+              onFocus={() => setError("")}
               className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
             />
             <div className="flex items-center gap-1.5 mt-1">
@@ -110,9 +122,13 @@ export default function Login() {
               <label className="text-sm font-semibold text-slate-700">{t("login.password_label")}</label>
               <SpeakerButton textKey="login.password_label" />
             </div>
-            <input type="password" placeholder="••••••••" required
+            <input
+              type="password"
+              placeholder="••••••••"
+              required
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
+              onFocus={() => setError("")}
               className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
             />
           </div>

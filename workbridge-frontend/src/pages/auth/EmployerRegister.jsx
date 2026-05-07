@@ -19,6 +19,13 @@ export default function EmployerRegister() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // ── Phone formatter: 0300-1234567 ────────────────────────────────────────
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  };
+
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
@@ -28,9 +35,14 @@ export default function EmployerRegister() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (form.password !== form.confirmPassword) return setError(t("employer_register.error_password_match"));
-    if (form.password.length < 8) return setError(t("employer_register.error_password_length"));
-    if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone)) return setError(t("employer_register.error_phone_format"));
+    if (form.password !== form.confirmPassword)
+      return setError(t("employer_register.error_password_match"));
+    if (form.password.length < 8)
+      return setError(t("employer_register.error_password_length"));
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
+      return setError("Password must contain at least one special character.");
+    if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
+      return setError(t("employer_register.error_phone_format"));
     setLoading(true);
     try {
       await api.post("/auth/register/employer", {
@@ -95,7 +107,6 @@ export default function EmployerRegister() {
             <span className="font-black text-lg tracking-tight">Work<span className="text-teal-400">Bridge</span></span>
           </div>
 
-          {/* Panel heading with speaker */}
           <div className="flex items-start gap-2 mb-3">
             <h2 className="text-2xl font-black leading-tight">
               {t("employer_register.panel_title_1")}{" "}
@@ -108,13 +119,11 @@ export default function EmployerRegister() {
             />
           </div>
 
-          {/* Panel subtitle with speaker */}
           <div className="flex items-start gap-1.5 mb-8">
             <p className="text-slate-400 text-sm leading-relaxed">{t("employer_register.panel_subtitle")}</p>
             <SpeakerButton textKey="employer_register.panel_subtitle" className="mt-0.5 shrink-0" />
           </div>
 
-          {/* Feature list — each item with speaker */}
           <ul className="space-y-3">
             {[
               "employer_register.feature_1",
@@ -138,7 +147,6 @@ export default function EmployerRegister() {
         {/* ── RIGHT PANEL ── */}
         <div className="flex-1 p-8 md:p-10 overflow-y-auto">
 
-          {/* Top heading */}
           <div className="flex items-center gap-1.5 mb-2">
             <p className="text-xs font-bold text-teal-600 tracking-widest uppercase">{t("employer_register.heading")}</p>
             <SpeakerButton textKey="employer_register.heading" />
@@ -154,10 +162,7 @@ export default function EmployerRegister() {
                     i === step ? "bg-slate-900 border-slate-900 text-white" :
                                  "bg-white border-slate-300 text-slate-400"
                   }`}>
-                    {i < step
-                      ? <Check size={13} strokeWidth={3} />
-                      : i + 1
-                    }
+                    {i < step ? <Check size={13} strokeWidth={3} /> : i + 1}
                   </div>
                   <span className={`text-[10px] font-semibold whitespace-nowrap ${i === step ? "text-slate-900" : "text-slate-400"}`}>
                     {label}
@@ -208,7 +213,14 @@ export default function EmployerRegister() {
                   </label>
                   <SpeakerButton textKey="employer_register.full_name" />
                 </div>
-                <input className={inputCls} placeholder={t("employer_register.full_name_placeholder")} required value={form.fullName} onChange={e => set("fullName", e.target.value)} />
+                <input
+                  className={inputCls}
+                  placeholder={t("employer_register.full_name_placeholder")}
+                  required
+                  value={form.fullName}
+                  onChange={e => set("fullName", e.target.value)}
+                  onFocus={() => setError("")}
+                />
               </div>
 
               {/* Phone */}
@@ -220,7 +232,15 @@ export default function EmployerRegister() {
                   </label>
                   <SpeakerButton textKey="employer_register.phone" />
                 </div>
-                <input className={inputCls} placeholder="0334-1234567" required value={form.phone} onChange={e => set("phone", e.target.value)} />
+                <input
+                  className={inputCls}
+                  placeholder="0334-1234567"
+                  required
+                  maxLength={12}
+                  value={form.phone}
+                  onChange={e => set("phone", formatPhone(e.target.value))}
+                  onFocus={() => setError("")}
+                />
                 <div className="flex items-center gap-1.5 mt-1">
                   <p className="text-xs text-slate-400">{t("employer_register.phone_hint")}</p>
                   <SpeakerButton textKey="employer_register.phone_hint" />
@@ -236,7 +256,15 @@ export default function EmployerRegister() {
                   </label>
                   <SpeakerButton textKey="employer_register.email" />
                 </div>
-                <input className={inputCls} placeholder="email@example.com" type="email" value={form.email} onChange={e => set("email", e.target.value)} />
+                <input
+                  className={inputCls}
+                  placeholder="email@example.com"
+                  type="email"
+                  value={form.email}
+                  onChange={e => set("email", e.target.value.toLowerCase())}
+                  onBlur={e => set("email", e.target.value.trim())}
+                  onFocus={() => setError("")}
+                />
               </div>
 
               {/* Password */}
@@ -247,7 +275,18 @@ export default function EmployerRegister() {
                   </label>
                   <SpeakerButton textKey="employer_register.password" />
                 </div>
-                <input className={inputCls} placeholder={t("employer_register.password_placeholder")} type="password" required value={form.password} onChange={e => set("password", e.target.value)} />
+                <input
+                  className={inputCls}
+                  placeholder={t("employer_register.password_placeholder")}
+                  type="password"
+                  required
+                  value={form.password}
+                  onChange={e => set("password", e.target.value)}
+                  onFocus={() => setError("")}
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Min 8 characters with at least one special character (!@#$%^&*).
+                </p>
               </div>
 
               {/* Confirm Password */}
@@ -258,7 +297,15 @@ export default function EmployerRegister() {
                   </label>
                   <SpeakerButton textKey="employer_register.confirm_password" />
                 </div>
-                <input className={inputCls} placeholder={t("employer_register.confirm_password_placeholder")} type="password" required value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} />
+                <input
+                  className={inputCls}
+                  placeholder={t("employer_register.confirm_password_placeholder")}
+                  type="password"
+                  required
+                  value={form.confirmPassword}
+                  onChange={e => set("confirmPassword", e.target.value)}
+                  onFocus={() => setError("")}
+                />
               </div>
 
               <button type="submit" disabled={loading}
@@ -278,18 +325,15 @@ export default function EmployerRegister() {
             <form onSubmit={verifyOtp} className="space-y-5">
               <div className="text-center py-2">
 
-                {/* Phone icon replacing 📱 emoji */}
                 <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Smartphone size={32} className="text-teal-500" strokeWidth={1.5} />
                 </div>
 
-                {/* OTP heading */}
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <h2 className="text-base font-black text-slate-900">{t("employer_register.check_whatsapp")}</h2>
                   <SpeakerButton textKey="employer_register.check_whatsapp" />
                 </div>
 
-                {/* Sent-to message */}
                 <div className="flex items-center justify-center gap-1.5">
                   <p className="text-sm text-slate-500">
                     {t("employer_register.otp_sent_to")} <span className="font-bold text-teal-600">{form.phone}</span>
@@ -297,7 +341,6 @@ export default function EmployerRegister() {
                   <SpeakerButton text={`${t("employer_register.otp_sent_to")} ${form.phone}`} />
                 </div>
 
-                {/* Expiry hint */}
                 <div className="flex items-center justify-center gap-1.5 mt-1">
                   <p className="text-xs text-slate-400">{t("employer_register.otp_expires")}</p>
                   <SpeakerButton textKey="employer_register.otp_expires" />
