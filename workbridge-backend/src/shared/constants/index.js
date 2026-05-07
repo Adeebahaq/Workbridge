@@ -36,6 +36,7 @@ const NOTIFICATION_TYPES = [
   "job_request_received","job_accepted","job_rejected","job_cancelled",
   "job_expired","job_marked_done","job_confirmed","admin_approved",
   "admin_rejected","otp_success","maintenance_scheduled",
+  "rating_received",   // ← NEW
 ];
 
 const ADMIN_ACTIONS = ["approve_worker","reject_worker","create_worker","suspend_worker"];

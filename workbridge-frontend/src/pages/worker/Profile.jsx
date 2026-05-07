@@ -60,14 +60,16 @@ function PricingField({ label, name, value, onChange }) {
 }
 
 export default function WorkerProfile() {
-  const [profile,       setProfile]       = useState(null);
-  const [editing,       setEditing]       = useState(false);
-  const [editingPricing,setEditingPricing] = useState(false);
-  const [form,          setForm]          = useState({});
-  const [pricing,       setPricing]       = useState({ hourlyRate: "", dailyRate: "", weeklyRate: "", monthlyRate: "" });
-  const [saving,        setSaving]        = useState(false);
-  const [savingPricing, setSavingPricing] = useState(false);
-  const [toast,         setToast]         = useState(null);
+  const [profile,        setProfile]        = useState(null);
+  const [editing,        setEditing]        = useState(false);
+  const [editingPricing, setEditingPricing] = useState(false);
+  const [form,           setForm]           = useState({});
+  const [pricing,        setPricing]        = useState({ hourlyRate: "", dailyRate: "", weeklyRate: "", monthlyRate: "" });
+  const [saving,         setSaving]         = useState(false);
+  const [savingPricing,  setSavingPricing]  = useState(false);
+  const [toast,          setToast]          = useState(null);
+  // ✅ Live completed jobs count
+  const [completedCount, setCompletedCount] = useState(0);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -84,7 +86,6 @@ export default function WorkerProfile() {
         preferredCity:     p.preferredCity       || "",
         maxTravelDistance: p.maxTravelDistance   || "",
       });
-      // Load existing pricing if available
       const existingPricing = p.servicePricing?.[0] || {};
       setPricing({
         hourlyRate:  existingPricing.hourlyRate  || "",
@@ -93,6 +94,11 @@ export default function WorkerProfile() {
         monthlyRate: existingPricing.monthlyRate || "",
       });
     }).catch(() => {});
+
+    // ✅ Fetch actual jobs and count completed ones
+    api.get("/jobs").then(jobs => {
+      setCompletedCount(Array.isArray(jobs) ? jobs.filter(j => j.status === "Completed").length : 0);
+    }).catch(() => setCompletedCount(0));
   }, []);
 
   const handleChange        = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -124,7 +130,6 @@ export default function WorkerProfile() {
         monthlyRate: pricing.monthlyRate ? Number(pricing.monthlyRate) : undefined,
       };
       await api.patch("/workers/pricing", { servicePricing: rates });
-      // Update local profile state
       setProfile(p => ({
         ...p,
         servicePricing: [{ ...rates, serviceId: p.services?.[0]?._id || p.services?.[0] }],
@@ -199,7 +204,8 @@ export default function WorkerProfile() {
                 <p className="text-[11px] text-slate-400">Rating</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-black text-slate-800">{profile.totalCompletedJobs || 0}</p>
+                {/* ✅ Now uses live count from /jobs */}
+                <p className="text-lg font-black text-slate-800">{completedCount}</p>
                 <p className="text-[11px] text-slate-400">Jobs Done</p>
               </div>
               <div className="text-center">
@@ -267,7 +273,7 @@ export default function WorkerProfile() {
         </div>
       </div>
 
-      {/* ── SERVICE PRICING ── */}
+      {/* SERVICE PRICING */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>

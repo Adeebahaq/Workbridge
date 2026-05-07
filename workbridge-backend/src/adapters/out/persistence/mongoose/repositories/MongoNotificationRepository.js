@@ -1,9 +1,17 @@
 const INotificationRepository = require("../../../../../ports/repositories/INotificationRepository");
-const Notification            = require("../models/Notification.model");
+const Notification             = require("../models/Notification.model");
 
 class MongoNotificationRepository extends INotificationRepository {
+
   async save(data) {
-    return new Notification(data).save();
+    const notification = await new Notification(data).save();
+    // ✅ Push to the recipient's browser in real time
+    if (global.io) {
+      global.io
+        .to(`user_${notification.userId.toString()}`)
+        .emit("new_notification", notification.toObject());
+    }
+    return notification;
   }
 
   async findByUser(userId) {
@@ -12,7 +20,7 @@ class MongoNotificationRepository extends INotificationRepository {
 
   async markRead(notificationId, userId) {
     const query = userId
-      ? { _id: notificationId, userId }   // scoped to owner
+      ? { _id: notificationId, userId }
       : { _id: notificationId };
     return Notification.findOneAndUpdate(
       query,

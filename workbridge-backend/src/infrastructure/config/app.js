@@ -11,9 +11,13 @@ function createApp() {
 
   // Serve uploaded files statically
   app.use("/uploads", express.static("uploads"));
+  
 
   // All API routes
+  app.use("/api/upload", require("../../adapters/in/http/routes/upload.routes"));
+
   app.use("/api", routes);
+
 
   // Centralized error handler (uses AppError.isOperational + statusCode)
   app.use(errorMiddleware);

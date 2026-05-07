@@ -47,7 +47,7 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     fetchJobs();
-    api.get("/notifications")
+      api.get("/employers/notifications")
       .then(data => setNotifications(Array.isArray(data) ? data : []))
       .catch(() => setNotifications([]))
       .finally(() => setLoadingNotifs(false));
