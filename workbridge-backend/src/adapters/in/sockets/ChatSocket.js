@@ -18,10 +18,11 @@ class ChatSocket {
     });
 
     io.on("connection", (socket) => {
-      socket.on("join_chat", ({ otherUserId }) => {
-        const room = `chat_${makeKey(socket.user.userId, otherUserId)}`;
-        socket.join(room);
-      });
+      // ✅ Each user joins their own private room for targeted notifications
+      const userId = socket.user?.userId;
+      if (userId) socket.join(`user_${userId}`);
+
+      socket.on("join_job", (jobId) => socket.join(`job_${jobId}`));
 
       socket.on("send_message", async (data) => {
         try {

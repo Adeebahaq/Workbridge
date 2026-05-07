@@ -8,6 +8,7 @@ export function useJobManagement() {
   const confirmJob  = async (id)   => api.patch(`/employers/jobs/${id}/confirm`);
   const acceptJob   = async (id)   => api.patch(`/workers/jobs/${id}/accept`);
   const rejectJob   = async (id, reason) => api.patch(`/workers/jobs/${id}/reject`, { reason });
+  const startJob    = async (id)   => api.patch(`/workers/jobs/${id}/start`);
   const markDone    = async (id)   => api.patch(`/workers/jobs/${id}/done`);
-  return { jobs, fetchJobs, sendRequest, cancelJob, confirmJob, acceptJob, rejectJob, markDone };
+  return { jobs, fetchJobs, sendRequest, cancelJob, confirmJob, acceptJob, rejectJob, startJob, markDone };
 }
