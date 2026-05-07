@@ -3,6 +3,38 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
 import AdminCreateWorker from "../../components/admin/AdminCreateWorker";
+import {
+  LayoutGrid,
+  CheckCircle,
+  Users,
+  BarChart2,
+  Wrench,
+  Building2,
+  UserCheck,
+  Clock,
+  MapPin,
+  Inbox,
+  CheckCircle2,
+  Loader2,
+  Flag,
+  XCircle,
+  Ban,
+  AlertTriangle,
+  RefreshCw,
+  PartyPopper,
+  HardHat,
+  Lock,
+  LockOpen,
+  Undo2,
+  LogOut,
+  Plus,
+  FileText,
+  Star,
+  ChevronRight,
+  Phone,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -142,7 +174,9 @@ function ReviewModal({ worker, onClose, onAction }) {
         <div className="bg-[#0F172A] p-6 text-white rounded-t-2xl shrink-0">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">Worker Review</span>
-            <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all">✕</button>
+            <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+              <XCircle size={14} />
+            </button>
           </div>
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black text-xl">
@@ -150,7 +184,11 @@ function ReviewModal({ worker, onClose, onAction }) {
             </div>
             <div>
               <h2 className="text-xl font-black">{name}</h2>
-              <p className="text-slate-400 text-sm">{worker.userId?.phone} · {worker.preferredCity}</p>
+              <p className="text-slate-400 text-sm flex items-center gap-2">
+                <Phone size={12} /> {worker.userId?.phone}
+                <span>·</span>
+                <MapPin size={12} /> {worker.preferredCity}
+              </p>
               <span className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${meta.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                 {meta.label}
@@ -244,7 +282,9 @@ function ReviewModal({ worker, onClose, onAction }) {
                 </div>
               ) : (
                 <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  <p className="text-4xl mb-2">📄</p>
+                  <div className="flex justify-center mb-2">
+                    <FileText size={36} className="text-slate-300" />
+                  </div>
                   <p className="text-sm text-slate-400 font-semibold">No CNIC image uploaded</p>
                 </div>
               )}
@@ -271,42 +311,43 @@ function ReviewModal({ worker, onClose, onAction }) {
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
                 />
                 <div className="flex justify-between items-center mt-1 px-1">
-                  <span className={`text-xs font-semibold ${rejectReady ? "text-green-600" : "text-red-500"}`}>
+                  <span className={`text-xs font-semibold flex items-center gap-1 ${rejectReady ? "text-green-600" : "text-red-500"}`}>
                     {rejectReady
-                      ? "✓ Ready to reject"
-                      : `${20 - charCount} more characters needed to enable Reject`}
+                      ? <><CheckCircle2 size={12} /> Ready to reject</>
+                      : <><AlertTriangle size={12} /> {20 - charCount} more characters needed to enable Reject</>}
                   </span>
                   <span className="text-xs text-slate-400">{charCount}/20</span>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handle("approve")} disabled={loading}
-                  className="flex-1 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-                  {loading ? "..." : "✓ Approve"}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                  Approve
                 </button>
                 <button onClick={() => handle("reject")} disabled={loading || !rejectReady}
-                  className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-                  ✕ Reject
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+                  <XCircle size={14} /> Reject
                 </button>
               </div>
             </>
           )}
           {isActive && (
             <button onClick={() => handle("suspend")} disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-              🔒 Suspend Worker
+              className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+              <Lock size={14} /> Suspend Worker
             </button>
           )}
           {worker.status === "Suspended" && (
             <button onClick={() => handle("activate")} disabled={loading}
-              className="w-full bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-              🔓 Reactivate Worker
+              className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+              <LockOpen size={14} /> Reactivate Worker
             </button>
           )}
           {worker.status === "Rejected" && (
             <button onClick={() => handle("approve")} disabled={loading}
-              className="w-full bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
-              ↩ Approve Anyway
+              className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all">
+              <Undo2 size={14} /> Approve Anyway
             </button>
           )}
         </div>
@@ -335,8 +376,8 @@ function WorkerCard({ worker, onReview }) {
               {meta.label}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">{worker.userId?.phone}</p>
-          <p className="text-xs text-slate-500 mt-0.5">📍 {worker.preferredCity}</p>
+          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1"><Phone size={10} /> {worker.userId?.phone}</p>
+          <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1"><MapPin size={10} /> {worker.preferredCity}</p>
           <div className="flex flex-wrap gap-1 mt-2">
             {services.map(s => (
               <span key={s._id || s} className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
@@ -352,8 +393,8 @@ function WorkerCard({ worker, onReview }) {
           <div className="flex items-center justify-between mt-3">
             <span className="text-[10px] text-slate-400">{relTime(worker.submittedAt)}</span>
             <button onClick={() => onReview(worker)}
-              className="text-xs font-bold text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg transition-all">
-              Review →
+              className="flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg transition-all">
+              Review <ChevronRight size={12} />
             </button>
           </div>
         </div>
@@ -375,7 +416,7 @@ function PendingRow({ worker, onReview }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-bold text-slate-800 text-sm">{name}</p>
-        <p className="text-xs text-slate-400">{worker.userId?.phone}</p>
+        <p className="text-xs text-slate-400 flex items-center gap-1"><Phone size={10} /> {worker.userId?.phone}</p>
       </div>
       <div className="flex gap-1.5 flex-wrap">
         {services.map(s => (
@@ -385,7 +426,7 @@ function PendingRow({ worker, onReview }) {
         ))}
       </div>
       <div className="text-center shrink-0">
-        <p className="text-xs font-bold text-slate-500">📍 {worker.preferredCity}</p>
+        <p className="text-xs font-bold text-slate-500 flex items-center gap-1"><MapPin size={10} /> {worker.preferredCity}</p>
       </div>
       <div className="text-center shrink-0">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${days === 0 ? "bg-blue-100 text-blue-600" : days <= 1 ? "bg-amber-100 text-amber-600" : "bg-red-100 text-red-600"}`}>
@@ -393,8 +434,8 @@ function PendingRow({ worker, onReview }) {
         </span>
       </div>
       <button onClick={() => onReview(worker)}
-        className="shrink-0 bg-[#0F172A] hover:bg-slate-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
-        Review →
+        className="shrink-0 flex items-center gap-1 bg-[#0F172A] hover:bg-slate-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+        Review <ChevronRight size={12} />
       </button>
     </div>
   );
@@ -402,10 +443,10 @@ function PendingRow({ worker, onReview }) {
 
 // ─── TABS ────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "overview", label: "Overview",       icon: "⊞" },
-  { id: "verify",   label: "Verify Workers", icon: "✅" },
-  { id: "all",      label: "All Workers",    icon: "👥" },
-  { id: "stats",    label: "Job Stats",      icon: "📊" },
+  { id: "overview", label: "Overview",       Icon: LayoutGrid },
+  { id: "verify",   label: "Verify Workers", Icon: ShieldCheck },
+  { id: "all",      label: "All Workers",    Icon: Users },
+  { id: "stats",    label: "Job Stats",      Icon: BarChart2 },
 ];
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────
@@ -502,22 +543,40 @@ export default function AdminDashboard() {
     </div>
   );
 
+  // Stat cards config
+  const STAT_CARDS = [
+    { label: "Total Workers",   valKey: "totalWorkers",         Icon: Wrench,    bgColor: "bg-blue-50",    iconColor: "text-blue-600" },
+    { label: "Total Employers", valKey: "totalEmployers",       Icon: Building2, bgColor: "bg-purple-50",  iconColor: "text-purple-600" },
+    { label: "Active Workers",  valKey: "activeWorkers",        Icon: UserCheck, bgColor: "bg-emerald-50", iconColor: "text-emerald-600" },
+    { label: "Pending Review",  valKey: "pendingVerifications", Icon: Clock,     bgColor: "bg-amber-50",   iconColor: "text-amber-600" },
+  ];
+
+  // Job stats config
+  const JOB_STAT_CARDS = [
+    { key: "requested",  label: "Requested",   Icon: Inbox },
+    { key: "accepted",   label: "Accepted",    Icon: CheckCircle },
+    { key: "inProgress", label: "In Progress", Icon: RefreshCw },
+    { key: "completed",  label: "Completed",   Icon: Flag },
+    { key: "rejected",   label: "Rejected",    Icon: XCircle },
+  ];
+
   return (
     <div className="flex min-h-screen bg-slate-50 mt-14">
 
-      {/* ── Toast ──────────────────────────────────────────────────────────── */}
+      {/* ── Toast ── */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl text-white ${toast.type === "error" ? "bg-red-500" : "bg-teal-500"}`}>
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl text-white flex items-center gap-2 ${toast.type === "error" ? "bg-red-500" : "bg-teal-500"}`}>
+          {toast.type === "error" ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
           {toast.msg}
         </div>
       )}
 
-      {/* ── Review Modal ────────────────────────────────────────────────────── */}
+      {/* ── Review Modal ── */}
       {selected && (
         <ReviewModal worker={selected} onClose={() => setSelected(null)} onAction={handleAction} />
       )}
 
-      {/* ── Create Worker Modal (fixed enums — uses AdminCreateWorker) ──────── */}
+      {/* ── Create Worker Modal ── */}
       {createModal && (
         <AdminCreateWorker
           onClose={() => setCreateModal(false)}
@@ -525,7 +584,7 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+      {/* ── Sidebar ── */}
       <aside className="w-56 shrink-0 bg-[#0F172A] flex flex-col min-h-screen fixed left-0 top-0 z-30">
         <div className="px-5 pt-6 pb-4">
           <div className="flex items-center gap-2">
@@ -536,12 +595,12 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-0.5">
-          {TABS.map(({ id, label, icon }) => (
+          {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left ${
                 tab === id ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}>
-              <span className="text-base">{icon}</span>
+              <Icon size={16} />
               <span>{label}</span>
               {tab === id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />}
               {id === "verify" && pending.length > 0 && (
@@ -563,12 +622,12 @@ export default function AdminDashboard() {
           </div>
           <button onClick={() => { logout(); navigate("/"); }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 text-xs font-bold border-none cursor-pointer bg-transparent transition-all">
-            <span>↪</span> Logout
+            <LogOut size={13} /> Logout
           </button>
         </div>
       </aside>
 
-      {/* ── Main Content ────────────────────────────────────────────────────── */}
+      {/* ── Main Content ── */}
       <main className="flex-1 ml-56 p-6 min-h-screen">
 
         {/* OVERVIEW */}
@@ -583,27 +642,23 @@ export default function AdminDashboard() {
                 onClick={() => setCreateModal(true)}
                 className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all"
               >
-                + Create Worker Account
+                <Plus size={15} /> Create Worker Account
               </button>
             </div>
 
             <div className="grid grid-cols-4 gap-4">
-              {dataLoading ? (
-                [1, 2, 3, 4].map(i => <StatSkeleton key={i} />)
-              ) : (
-                [
-                  { label: "Total Workers",   val: metrics?.totalWorkers         ?? "—", icon: "🧑‍🔧", color: "bg-blue-50 text-blue-600" },
-                  { label: "Total Employers", val: metrics?.totalEmployers       ?? "—", icon: "🏢",  color: "bg-purple-50 text-purple-600" },
-                  { label: "Active Workers",  val: metrics?.activeWorkers        ?? "—", icon: "✅",  color: "bg-emerald-50 text-emerald-600" },
-                  { label: "Pending Review",  val: metrics?.pendingVerifications ?? "—", icon: "⏳",  color: "bg-amber-50 text-amber-600" },
-                ].map(({ label, val, icon, color }) => (
+              {dataLoading
+                ? [1, 2, 3, 4].map(i => <StatSkeleton key={i} />)
+                : STAT_CARDS.map(({ label, valKey, Icon, bgColor, iconColor }) => (
                   <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center text-xl mb-3`}>{icon}</div>
-                    <p className="text-2xl font-black text-slate-800">{val}</p>
+                    <div className={`w-10 h-10 rounded-xl ${bgColor} ${iconColor} flex items-center justify-center mb-3`}>
+                      <Icon size={20} />
+                    </div>
+                    <p className="text-2xl font-black text-slate-800">{metrics?.[valKey] ?? "—"}</p>
                     <p className="text-xs font-semibold text-slate-400 mt-0.5">{label}</p>
                   </div>
                 ))
-              )}
+              }
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -676,7 +731,9 @@ export default function AdminDashboard() {
                   </div>
                 ) : pending.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-3xl mb-2">🎉</p>
+                    <div className="flex justify-center mb-2">
+                      <PartyPopper size={32} className="text-teal-400" />
+                    </div>
                     <p className="text-sm text-slate-400 font-semibold">All caught up!</p>
                     <p className="text-xs text-slate-400">No pending verifications</p>
                   </div>
@@ -689,9 +746,9 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-700 truncate">{w.userId?.fullName}</p>
-                          <p className="text-xs text-slate-400">{w.preferredCity}</p>
+                          <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin size={10} /> {w.preferredCity}</p>
                         </div>
-                        <span className="text-xs font-bold text-teal-600">Review →</span>
+                        <span className="text-xs font-bold text-teal-600 flex items-center gap-0.5">Review <ChevronRight size={12} /></span>
                       </div>
                     ))}
                     {pending.length > 4 && (
@@ -728,7 +785,9 @@ export default function AdminDashboard() {
               </div>
             ) : pending.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
-                <p className="text-5xl mb-4">🎉</p>
+                <div className="flex justify-center mb-4">
+                  <PartyPopper size={48} className="text-teal-400" />
+                </div>
                 <p className="font-black text-slate-700 text-base mb-1">No pending verifications</p>
                 <p className="text-slate-400 text-sm">All worker submissions have been reviewed.</p>
               </div>
@@ -750,13 +809,16 @@ export default function AdminDashboard() {
                 <h1 className="text-2xl font-black text-slate-800">All Workers</h1>
                 <p className="text-sm text-slate-400">Browse all registered workers on the platform</p>
               </div>
-              <input
-                type="text"
-                placeholder="Search name, phone, city..."
-                value={workerSearch}
-                onChange={e => setWorkerSearch(e.target.value)}
-                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 w-52"
-              />
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search name, phone, city..."
+                  value={workerSearch}
+                  onChange={e => setWorkerSearch(e.target.value)}
+                  className="border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 w-52"
+                />
+              </div>
             </div>
 
             <div className="flex gap-1 bg-white rounded-2xl p-1 shadow-sm border border-slate-100 w-fit">
@@ -800,7 +862,9 @@ export default function AdminDashboard() {
               </div>
             ) : visibleWorkers.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
-                <p className="text-4xl mb-3">👷</p>
+                <div className="flex justify-center mb-3">
+                  <HardHat size={40} className="text-slate-300" />
+                </div>
                 <p className="text-slate-500 font-semibold text-sm">No workers found</p>
               </div>
             ) : (
@@ -831,17 +895,13 @@ export default function AdminDashboard() {
                   </div>
                 ))
               ) : (
-                [
-                  { key: "requested",  label: "Requested",   icon: "📩" },
-                  { key: "accepted",   label: "Accepted",    icon: "✅" },
-                  { key: "inProgress", label: "In Progress", icon: "🔄" },
-                  { key: "completed",  label: "Completed",   icon: "🏁" },
-                  { key: "rejected",   label: "Rejected",    icon: "❌" },
-                ].map(({ key, label, icon }) => (
+                JOB_STAT_CARDS.map(({ key, label, Icon }) => (
                   <div key={key} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mx-auto mb-2"
-                      style={{ backgroundColor: JOB_STATUS_COLORS[key] + "20" }}>
-                      {icon}
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
+                      style={{ backgroundColor: JOB_STATUS_COLORS[key] + "20", color: JOB_STATUS_COLORS[key] }}
+                    >
+                      <Icon size={20} />
                     </div>
                     <p className="text-2xl font-black text-slate-800">{allJobData[key] ?? 0}</p>
                     <p className="text-[10px] font-semibold text-slate-400 mt-0.5 uppercase tracking-wide">{label}</p>
