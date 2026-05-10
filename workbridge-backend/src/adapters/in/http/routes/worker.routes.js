@@ -21,6 +21,35 @@ module.exports = function(controller) {
     } catch (e) { next(e); }
   });
 
+  // Public: 5-star employer reviews for homepage
+  router.get("/public-reviews", async (req, res, next) => {
+    try {
+      const Rating = require("../../../out/persistence/mongoose/models/Rating.model");
+      const User   = require("../../../out/persistence/mongoose/models/User.model");
+
+      // Only 5-star ratings that have feedback text
+      const ratings = await Rating.find({ stars: 5, feedback: { $exists: true, $ne: "" } })
+        .sort({ submittedAt: -1 })
+        .limit(6)
+        .lean();
+
+      const results = [];
+      for (const r of ratings) {
+        const employer = await User.findById(r.employerId).select("fullName").lean();
+        if (!employer) continue;
+
+        results.push({
+          stars:        r.stars,
+          feedback:     r.feedback,
+          employerName: employer.fullName,
+          submittedAt:  r.submittedAt,
+        });
+      }
+
+      res.json(results);
+    } catch (e) { next(e); }
+  });
+
   // Public: worker self-registration
   router.post(
     "/register",
@@ -74,14 +103,14 @@ module.exports = function(controller) {
     (req, res, next) => controller.markJobDone(req, res, next)
   );
 
-  // ── NEW: Ratings ─────────────────────────────────────────────────────────
+  // Ratings
   router.get(
     "/ratings",
     authMiddleware, roleMiddleware("worker"),
     (req, res, next) => controller.getMyRatings(req, res, next)
   );
 
-  // ── NEW: Notifications ───────────────────────────────────────────────────
+  // Notifications
   router.get(
     "/notifications",
     authMiddleware, roleMiddleware("worker"),
