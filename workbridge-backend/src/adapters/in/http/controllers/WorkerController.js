@@ -1,4 +1,5 @@
 const WorkerProfile = require("../../../out/persistence/mongoose/models/WorkerProfile.model");
+const { uploadToCloudinary } = require("../middlewares/upload.middleware");
 
 class WorkerController {
   constructor({
@@ -27,20 +28,24 @@ class WorkerController {
 
   async register(req, res, next) {
     try {
-      const workerData = {
-        ...req.body,
-        cnicFrontImage: req.file
-          ? {
-              url:        req.file.path.replace(/\\/g, "/"),
-              fileSize:   req.file.size,
-              mimeType:   req.file.mimetype,
-              uploadedAt: new Date(),
-            }
-          : null,
-      };
+      let cnicFrontImage = null;
+
+      if (req.file) {
+        const result = await uploadToCloudinary(req.file.buffer, {
+          folder: "workbridge/cnic",
+          resource_type: "image",
+        });
+        cnicFrontImage = {
+          url:        result.secure_url,
+          fileSize:   req.file.size,
+          mimeType:   req.file.mimetype,
+          uploadedAt: new Date(),
+        };
+      }
+
+      const workerData = { ...req.body, cnicFrontImage };
       res.status(201).json(await this.registerWorkerUseCase.execute(workerData));
     } catch (e) {
-      if (req.file && req.file.path) require("fs").unlink(req.file.path, () => {});
       next(e);
     }
   }
@@ -128,21 +133,18 @@ class WorkerController {
     } catch (e) { next(e); }
   }
 
-  // ── NEW: Worker sees their own ratings ───────────────────────────────────
   async getMyRatings(req, res, next) {
     try {
       res.json(await this.getWorkerRatingsUseCase.execute({ userId: req.user.userId }));
     } catch (e) { next(e); }
   }
 
-  // ── NEW: Worker sees their notifications (including rating_received) ─────
   async getNotifications(req, res, next) {
     try {
       res.json(await this.getWorkerNotificationsUseCase.execute({ userId: req.user.userId }));
     } catch (e) { next(e); }
   }
 
-  // ── NEW: Worker marks a notification as read ─────────────────────────────
   async markNotificationRead(req, res, next) {
     try {
       res.json(await this.markNotificationReadUseCase.execute({
@@ -152,7 +154,6 @@ class WorkerController {
     } catch (e) { next(e); }
   }
 
-  // ── NEW: Worker marks all notifications as read ──────────────────────────
   async markAllNotificationsRead(req, res, next) {
     try {
       await req.app.locals.notificationRepo?.markAllRead(req.user.userId);
