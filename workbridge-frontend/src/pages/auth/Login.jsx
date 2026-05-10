@@ -12,58 +12,25 @@ const ROLE_REDIRECT = {
   employer: "/employer/workers",
 };
 
+// ── Phone formatter: 0300-1234567 ──────────────────────────────────────────
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
 export default function Login() {
   const [form, setForm]                       = useState({ phone: "", password: "" });
   const [error, setError]                     = useState("");
-  const [phoneError, setPhoneError]           = useState("");
   const [unverifiedPhone, setUnverifiedPhone] = useState("");
   const [loading, setLoading]                 = useState(false);
   const { login } = useAuth();
   const navigate  = useNavigate();
   const { t } = useTranslation();
 
-  const handlePhoneChange = (e) => {
-    const sanitized = e.target.value.replace(/[^0-9+]/g, "");
-
-    // Cap length: 03XXXXXXXXX = 11, +92XXXXXXXXXX = 13, anything else allow 13 while still typing
-    let maxLen = 13;
-    if (sanitized.startsWith("03")) maxLen = 11;
-
-    if (sanitized.length > maxLen) return;
-
-    setForm({ ...form, phone: sanitized });
-    setError("");
-
-    // Immediate inline feedback as user types
-    if (sanitized.length === 0) {
-      setPhoneError("");
-    } else if (sanitized.startsWith("+")) {
-      setPhoneError(!sanitized.startsWith("+92") ? "Phone must start with +92 or 03." : "");
-    } else if (sanitized.startsWith("0")) {
-      setPhoneError(!sanitized.startsWith("03") ? "Phone must start with +92 or 03." : "");
-    } else {
-      setPhoneError("Phone must start with +92 or 03.");
-    }
-  };
-
-  const validatePhone = () => {
-    const isValid =
-      form.phone.match(/^\+92\d{10}$/) || form.phone.match(/^03\d{9}$/);
-    if (!isValid) {
-      setPhoneError("Phone must start with +92 or 03.");
-      return false;
-    }
-    setPhoneError("");
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); setUnverifiedPhone("");
-
-    if (!validatePhone()) return;
-
-    setLoading(true);
+    setError(""); setUnverifiedPhone(""); setLoading(true);
     try {
       const { token, role, fullName } = await api.post("/auth/login", form);
       let extraData = { fullName };
@@ -110,7 +77,6 @@ export default function Login() {
           <SpeakerButton textKey="login.subtitle" />
         </div>
 
-        {/* API / general error banner */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm text-red-600 flex items-start gap-2">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -126,7 +92,7 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
+        <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* Phone field */}
           <div>
@@ -136,23 +102,18 @@ export default function Login() {
             </div>
             <input
               type="tel"
-              name="phone"
-              autoComplete="tel"
-              placeholder="+923001234567 or 03001234567"
+              placeholder={t("login.phone_placeholder")}
               required
+              maxLength={12}
               value={form.phone}
-              onChange={handlePhoneChange}
-              onBlur={validatePhone}
+              onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
               onFocus={() => setError("")}
-              className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all
-                ${phoneError
-                  ? "border-red-400 bg-red-50 focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
-                  : "border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                }`}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
             />
-            {phoneError && (
-              <p className="text-xs text-red-500 mt-1">{phoneError}</p>
-            )}
+            <div className="flex items-center gap-1.5 mt-1">
+              <p className="text-xs text-slate-400">{t("login.phone_hint")}</p>
+              <SpeakerButton textKey="login.phone_hint" />
+            </div>
           </div>
 
           {/* Password field */}
@@ -163,8 +124,6 @@ export default function Login() {
             </div>
             <input
               type="password"
-              name="password"
-              autoComplete="current-password"
               placeholder="••••••••"
               required
               value={form.password}

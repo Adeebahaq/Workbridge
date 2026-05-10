@@ -3,7 +3,7 @@ import api from "../../services/api";
 
 function Field({ label, value, half = false }) {
   return (
-    <div className={half ? "col-span-1" : "col-span-2"}>
+    <div className={half ? "sm:col-span-1 col-span-1" : "col-span-1 sm:col-span-2"}>
       <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
         {label}
       </label>
@@ -16,7 +16,7 @@ function Field({ label, value, half = false }) {
 
 function EditField({ label, name, value, onChange, half = false, type = "text", readOnly = false, placeholder = "" }) {
   return (
-    <div className={half ? "col-span-1" : "col-span-2"}>
+    <div className={half ? "sm:col-span-1 col-span-1" : "col-span-1 sm:col-span-2"}>
       <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
         {label}
       </label>
@@ -216,7 +216,7 @@ export default function WorkerProfile() {
           </div>
           <div className="shrink-0">
             {editing ? (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap justify-center sm:justify-start">
                 <button onClick={() => setEditing(false)} className="border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50">
                   Cancel
                 </button>
@@ -238,7 +238,7 @@ export default function WorkerProfile() {
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           👤 Personal Information
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {editing ? (
             <>
               <EditField label="Full Name *"               name="fullName"           value={form.fullName}           onChange={handleChange} half readOnly />
@@ -264,7 +264,7 @@ export default function WorkerProfile() {
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           🗂 Work Information
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Employment Type" value={profile.employmentType}                                    half />
           <Field label="Gender"          value={profile.gender}                                            half />
           <Field label="CNIC Number"     value={profile.cnicNumber} />
@@ -275,7 +275,7 @@ export default function WorkerProfile() {
 
       {/* SERVICE PRICING */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               💰 Service Pricing
@@ -292,7 +292,7 @@ export default function WorkerProfile() {
               {hasPricing ? "✏️ Edit Rates" : "➕ Set Rates"}
             </button>
           ) : (
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap">
               <button
                 onClick={() => setEditingPricing(false)}
                 className="border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50"
@@ -311,7 +311,7 @@ export default function WorkerProfile() {
         </div>
 
         {editingPricing ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PricingField label="Hourly Rate  (PKR / hr)"  name="hourlyRate"  value={pricing.hourlyRate}  onChange={handlePricingChange} />
             <PricingField label="Daily Rate   (PKR / day)" name="dailyRate"   value={pricing.dailyRate}   onChange={handlePricingChange} />
             <PricingField label="Weekly Rate  (PKR / wk)"  name="weeklyRate"  value={pricing.weeklyRate}  onChange={handlePricingChange} />
