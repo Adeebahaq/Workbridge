@@ -81,12 +81,6 @@ const SERVICE_TRANS_KEYS = {
   "Security Guards":  { name: "services.security",     sub: "services.security_sub" },
 };
 
-const REVIEW_KEYS = [
-  { name: "Ali Mahmood", roleKey: "reviews.role1", textKey: "reviews.text1", stars: 5 },
-  { name: "Sara Baig",   roleKey: "reviews.role2", textKey: "reviews.text2", stars: 5 },
-  { name: "Fatima Asif", roleKey: "reviews.role3", textKey: "reviews.text3", stars: 5 },
-];
-
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -97,6 +91,8 @@ export default function Home() {
   const [services, setServices]             = useState(FALLBACK_SERVICES);
   const [workers, setWorkers]               = useState([]);
   const [workersLoading, setWorkersLoading] = useState(true);
+  const [reviews, setReviews]               = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     api.get("/services")
@@ -115,6 +111,16 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => setWorkersLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.get("/workers/public-reviews")
+      .then(res => {
+        const list = Array.isArray(res) ? res : res?.data;
+        if (Array.isArray(list) && list.length > 0) setReviews(list);
+      })
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
   }, []);
 
   // --- Data Arrays ---
@@ -477,25 +483,77 @@ export default function Home() {
             <SpeakerButton text={`${t("reviews.title")}. ${t("reviews.rating_summary")}`} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {REVIEW_KEYS.map(({ name, roleKey, textKey, stars }) => (
-              <div key={name} className="bg-white rounded-2xl p-6 text-left shadow-sm border border-slate-100 relative">
-                <div className="absolute top-6 right-6">
-                  <SpeakerButton text={`${t(textKey)}. Reviewed by ${name}, ${t(roleKey)}`} />
+          {reviewsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-6 border border-slate-100 animate-pulse">
+                  <div className="flex gap-1 mb-3">
+                    {[1,2,3,4,5].map(j => (
+                      <div key={j} className="w-3 h-3 rounded bg-slate-200" />
+                    ))}
+                  </div>
+                  <div className="space-y-2 mb-5">
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                    <div className="h-3 bg-slate-200 rounded w-5/6" />
+                    <div className="h-3 bg-slate-200 rounded w-4/6" />
+                  </div>
+                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-slate-200 shrink-0" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3 bg-slate-200 rounded w-1/2" />
+                      <div className="h-2 bg-slate-100 rounded w-1/3" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-0.5 mb-3">
-                  {Array(stars).fill(null).map((_, i) => (
-                    <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-slate-600 text-sm leading-relaxed mb-4 italic">"{t(textKey)}"</p>
-                <div>
-                  <div className="font-black text-sm text-[#0F172A]">{name}</div>
-                  <div className="text-xs text-slate-400 font-semibold">{t(roleKey)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <Star size={40} className="mx-auto mb-3 text-slate-200" />
+              <p className="font-semibold text-sm">
+                {t("reviews.no_reviews") || "No 5-star reviews yet. Be the first to hire and review a worker!"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {reviews.slice(0, 6).map((review, idx) => {
+                const initials = (review.employerName || "E")
+                  .split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
+                return (
+                  <div key={idx} className="bg-white rounded-2xl p-6 text-left shadow-sm border border-slate-100 relative">
+                    <div className="absolute top-6 right-6">
+                      <SpeakerButton
+                        text={`${review.feedback}. Reviewed by ${review.employerName}, Employer`}
+                      />
+                    </div>
+
+                    {/* 5 filled stars */}
+                    <div className="flex gap-0.5 mb-3">
+                      {[1,2,3,4,5].map(i => (
+                        <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
+                      ))}
+                    </div>
+
+                    {/* Feedback text */}
+                    <p className="text-slate-600 text-sm leading-relaxed mb-5 italic">
+                      "{review.feedback}"
+                    </p>
+
+                    {/* Employer info */}
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
+                      <div className="w-9 h-9 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-xs shrink-0">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="font-black text-sm text-[#0F172A]">{review.employerName}</div>
+                        <div className="text-xs text-slate-400 font-semibold">Employer</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
