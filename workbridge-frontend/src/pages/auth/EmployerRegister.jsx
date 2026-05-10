@@ -1,57 +1,121 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import api from "../../services/api";
-import SpeakerButton from "../../components/ui/SpeakerButton";
-import { AlertCircle, Check, Smartphone } from "lucide-react";
+import { Check, Smartphone } from "lucide-react";
+
+// ── block non-alpha keys on name field ───────────────────────
+const blockNonAlpha = (e) => {
+  if (
+    !/^[a-zA-Z\s]$/.test(e.key) &&
+    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+};
 
 export default function EmployerRegister() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [step, setStep]                     = useState(0);
-  const [form, setForm]                     = useState({ fullName: "", phone: "", email: "", password: "", confirmPassword: "" });
-  const [otp, setOtp]                       = useState(["", "", "", "", "", ""]);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [error, setError]                   = useState("");
-  const [loading, setLoading]               = useState(false);
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
+    fullName: "", phone: "", email: "", password: "", confirmPassword: "",
+  });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+  const otpRefs = React.useRef([]);
 
-  const STEPS = [t("employer_register.step_details"), t("employer_register.step_verify")];
+  React.useEffect(() => {
+    if (step !== 1 || resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer, step]);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  // ── Phone formatter: 0300-1234567 ────────────────────────────────────────
-  const formatPhone = (value) => {
-    const digits = value.replace(/\D/g, "").slice(0, 11);
-    if (digits.length <= 4) return digits;
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  const setField = (k, v) => {
+    // ── live formatting & validation ──
+    if (k === "fullName") {
+      v = v.replace(/[^a-zA-Z\s]/g, "").slice(0, 60);
+    }
+    if (k === "phone") {
+      // Sanitize: allow only digits and leading +
+      const sanitized = v.replace(/[^0-9+]/g, "");
+      if (sanitized.length > 13) return; // cap length
+      v = sanitized;
+      // Live format check: must start with +92 or 03
+      const digits = sanitized.replace(/\D/g, "");
+      if (
+        sanitized.length >= 2 &&
+        !sanitized.startsWith("+92") &&
+        !digits.startsWith("03")
+      ) {
+        setFieldErrors((e) => ({ ...e, phone: "Phone must start with +92 or 03." }));
+      } else {
+        setFieldErrors((e) => ({ ...e, phone: undefined }));
+      }
+    }
+    if (k === "email" && v.length > 0) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+        setFieldErrors((e) => ({ ...e, email: "Enter a valid email address." }));
+      else
+        setFieldErrors((e) => ({ ...e, email: undefined }));
+    } else if (k === "email") {
+      setFieldErrors((e) => ({ ...e, email: undefined }));
+    }
+    if (k === "password") {
+      if (v.length > 0 && v.length < 8)
+        setFieldErrors((e) => ({ ...e, password: "Password must be at least 8 characters." }));
+      else if (v.length >= 8 && !/[!@#$%^&*(),.?":{}|<>]/.test(v))
+        setFieldErrors((e) => ({ ...e, password: "Password must contain at least one special character." }));
+      else
+        setFieldErrors((e) => ({ ...e, password: undefined }));
+    }
+    if (k === "confirmPassword") {
+      setForm((f) => {
+        if (v !== f.password)
+          setFieldErrors((e) => ({ ...e, confirmPassword: "Passwords do not match." }));
+        else
+          setFieldErrors((e) => ({ ...e, confirmPassword: undefined }));
+        return f;
+      });
+    }
+    setForm((f) => ({ ...f, [k]: v }));
   };
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [resendCooldown]);
+  const validate = () => {
+    const errs = {};
+    if (!form.fullName.trim() || form.fullName.trim().length < 3)
+      errs.fullName = "Full name must be at least 3 letters.";
+    // Accept +92XXXXXXXXXX (13 chars) or 03XXXXXXXXX (11 digits)
+    const isValidPhone =
+      form.phone.match(/^\+92\d{10}$/) || form.phone.match(/^03\d{9}$/);
+    if (!isValidPhone)
+      errs.phone = "Enter a valid phone number (e.g., +923001234567 or 03001234567).";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      errs.email = "Enter a valid email address.";
+    if (!form.password || form.password.length < 8)
+      errs.password = "Password must be at least 8 characters.";
+    else if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
+      errs.password = "Password must contain at least one special character.";
+    if (form.password !== form.confirmPassword)
+      errs.confirmPassword = "Passwords do not match.";
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (form.password !== form.confirmPassword)
-      return setError(t("employer_register.error_password_match"));
-    if (form.password.length < 8)
-      return setError(t("employer_register.error_password_length"));
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
-      return setError("Password must contain at least one special character.");
-    if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
-      return setError(t("employer_register.error_phone_format"));
+    if (!validate()) return;
     setLoading(true);
     try {
       await api.post("/auth/register/employer", {
         fullName: form.fullName,
-        phone:    form.phone,
-        email:    form.email,
+        phone: form.phone,
+        email: form.email,
         password: form.password,
       });
-      setResendCooldown(60);
+      setResendTimer(60);
       setStep(1);
     } catch (err) { setError(err.message || t("employer_register.error_default")); }
     finally { setLoading(false); }
@@ -79,325 +143,260 @@ export default function EmployerRegister() {
     finally { setLoading(false); }
   };
 
-  const handleOtpChange = (i, val) => {
-    const digit = val.replace(/\D/g, "").slice(-1);
-    const next = [...otp]; next[i] = digit; setOtp(next);
-    if (digit && i < 5) document.getElementById(`otp-emp-${i + 1}`)?.focus();
+  const handleOtpChange = (i, v) => {
+    const d = [...otpDigits];
+    d[i] = v.slice(-1);
+    setOtpDigits(d);
+    if (v && i < 5) otpRefs.current[i + 1]?.focus();
   };
   const handleOtpKey = (i, e) => {
-    if (e.key === "Backspace" && !otp[i] && i > 0) document.getElementById(`otp-emp-${i - 1}`)?.focus();
-  };
-  const handleOtpPaste = (e) => {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (!pasted) return;
-    const next = [...otp];
-    pasted.split("").forEach((d, i) => { next[i] = d; });
-    setOtp(next);
-    document.getElementById(`otp-emp-${Math.min(pasted.length, 5)}`)?.focus();
-    e.preventDefault();
+    if (e.key === "Backspace" && !otpDigits[i] && i > 0) otpRefs.current[i - 1]?.focus();
   };
 
-  const inputCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all bg-white";
+  const verifyOtp = async () => {
+    const otp = otpDigits.join("");
+    if (otp.length < 6) return setError("Enter all 6 digits");
+    setLoading(true);
+    try {
+      await api.post("/auth/verify-otp", { phone: form.phone, otp });
+      navigate("/login");
+    } catch (err) {
+      setError(err.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputClass = (key) =>
+    `w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${
+      fieldErrors[key]
+        ? "border-red-400 focus:ring-red-300 bg-red-50"
+        : "border-gray-300 focus:ring-teal"
+    }`;
+
+  const features = [
+    "Access CNIC-verified worker profiles",
+    "Search by service, location & availability",
+    "Transparent ratings & reviews",
+    "Real-time job request management",
+    "Direct in-app messaging",
+    "Secure & trusted platform",
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10 font-sans pt-[90px]">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex">
+    <div className="min-h-screen flex">
+      {/* Left panel */}
+      <div className="hidden lg:flex flex-col justify-center bg-gray-900 w-5/12 p-12">
+        <h2 className="text-3xl font-extrabold text-white leading-snug mb-5">
+          Hire <span className="text-teal">Verified Workers</span> with Confidence
+        </h2>
+        <p className="text-gray-400 text-sm leading-relaxed mb-8">
+          Join thousands of employers who trust WorkBridge for reliable, verified domestic and service workers.
+        </p>
+        <ul className="space-y-3">
+          {features.map((item) => (
+            <li key={item} className="flex items-center gap-3">
+              <Check className="w-4 h-4 text-teal flex-shrink-0" />
+              <span className="text-gray-300 text-sm">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-        {/* ── LEFT PANEL ── */}
-        <div className="hidden md:flex flex-col justify-center bg-slate-900 text-white w-2/5 p-10">
-          <div className="flex items-center gap-2.5 mb-10">
-            <div className="w-9 h-9 rounded-lg bg-teal-500 flex items-center justify-center text-lg font-black">W</div>
-            <span className="font-black text-lg tracking-tight">Work<span className="text-teal-400">Bridge</span></span>
-          </div>
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6 py-12">
+        <div className="w-full max-w-md">
+          {step === 0 ? (
+            <>
+              <span className="inline-block bg-teal-light text-teal-dark text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">
+                Employer Sign Up
+              </span>
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Create Employer Account</h1>
+              <p className="text-sm text-gray-500 mb-7">Register in 2 minutes with OTP verification</p>
 
-          <div className="flex items-start gap-2 mb-3">
-            <h2 className="text-2xl font-black leading-tight">
-              {t("employer_register.panel_title_1")}{" "}
-              <span className="text-teal-400">{t("employer_register.panel_title_2")}</span>{" "}
-              {t("employer_register.panel_title_3")}
-            </h2>
-            <SpeakerButton
-              text={`${t("employer_register.panel_title_1")} ${t("employer_register.panel_title_2")} ${t("employer_register.panel_title_3")}`}
-              className="mt-1 shrink-0"
-            />
-          </div>
-
-          <div className="flex items-start gap-1.5 mb-8">
-            <p className="text-slate-400 text-sm leading-relaxed">{t("employer_register.panel_subtitle")}</p>
-            <SpeakerButton textKey="employer_register.panel_subtitle" className="mt-0.5 shrink-0" />
-          </div>
-
-          <ul className="space-y-3">
-            {[
-              "employer_register.feature_1",
-              "employer_register.feature_2",
-              "employer_register.feature_3",
-              "employer_register.feature_4",
-              "employer_register.feature_5",
-              "employer_register.feature_6",
-            ].map(key => (
-              <li key={key} className="flex items-center gap-3 text-sm text-slate-300">
-                <span className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center shrink-0">
-                  <Check size={12} className="text-teal-400" strokeWidth={2.5} />
-                </span>
-                <span>{t(key)}</span>
-                <SpeakerButton textKey={key} className="ml-auto shrink-0" />
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* ── RIGHT PANEL ── */}
-        <div className="flex-1 p-8 md:p-10 overflow-y-auto">
-
-          <div className="flex items-center gap-1.5 mb-2">
-            <p className="text-xs font-bold text-teal-600 tracking-widest uppercase">{t("employer_register.heading")}</p>
-            <SpeakerButton textKey="employer_register.heading" />
-          </div>
-
-          {/* Step bar */}
-          <div className="flex items-center gap-2 mb-6">
-            {STEPS.map((label, i) => (
-              <React.Fragment key={i}>
-                <div className="flex flex-col items-center gap-1 shrink-0">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                    i < step   ? "bg-teal-500 border-teal-500 text-white" :
-                    i === step ? "bg-slate-900 border-slate-900 text-white" :
-                                 "bg-white border-slate-300 text-slate-400"
-                  }`}>
-                    {i < step ? <Check size={13} strokeWidth={3} /> : i + 1}
-                  </div>
-                  <span className={`text-[10px] font-semibold whitespace-nowrap ${i === step ? "text-slate-900" : "text-slate-400"}`}>
-                    {label}
-                  </span>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-5">
+                  {error}
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mb-4 transition-all ${i < step ? "bg-teal-500" : "bg-slate-200"}`} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+              )}
 
-          {/* Step title + subtitle */}
-          <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-xl font-black text-slate-900">
-              {step === 0 ? t("employer_register.title_step0") : t("employer_register.title_step1")}
-            </h1>
-            <SpeakerButton textKey={step === 0 ? "employer_register.title_step0" : "employer_register.title_step1"} />
-          </div>
-          <div className="flex items-center gap-1.5 mb-6">
-            <p className="text-sm text-slate-400">
-              {step === 0
-                ? t("employer_register.subtitle_step0")
-                : t("employer_register.subtitle_step1", { phone: form.phone })}
-            </p>
-            <SpeakerButton
-              textKey={step === 0 ? "employer_register.subtitle_step0" : undefined}
-              text={step === 1 ? t("employer_register.subtitle_step1", { phone: form.phone }) : undefined}
-            />
-          </div>
+              <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
-              {error}
-            </div>
-          )}
-
-          {/* ── STEP 0: Details ── */}
-          {step === 0 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-
-              {/* Full Name */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {t("employer_register.full_name")} <span className="text-red-500">*</span>
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
                   </label>
-                  <SpeakerButton textKey="employer_register.full_name" />
+                  <input
+                    name="fullName"
+                    autoComplete="off"
+                    className={inputClass("fullName")}
+                    placeholder="Saqib Aslam"
+                    value={form.fullName}
+                    onKeyDown={blockNonAlpha}
+                    onChange={(e) => setField("fullName", e.target.value)}
+                    required
+                  />
+                  {fieldErrors.fullName
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.fullName}</p>
+                    : <p className="text-xs text-gray-400 mt-1">Letters only</p>}
                 </div>
-                <input
-                  className={inputCls}
-                  placeholder={t("employer_register.full_name_placeholder")}
-                  required
-                  value={form.fullName}
-                  onChange={e => set("fullName", e.target.value)}
-                  onFocus={() => setError("")}
-                />
-              </div>
 
-              {/* Phone */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {t("employer_register.phone")} <span className="text-red-500">*</span>{" "}
-                    <span className="text-slate-400 font-normal">({t("employer_register.whatsapp")})</span>
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>{" "}
+                    <span className="text-gray-400 font-normal">(WhatsApp)</span>
                   </label>
-                  <SpeakerButton textKey="employer_register.phone" />
+                  <input
+                    name="phone"
+                    type="tel"
+                    autoComplete="off"
+                    className={inputClass("phone")}
+                    placeholder="+923001234567 or 03001234567"
+                    value={form.phone}
+                    onChange={(e) => setField("phone", e.target.value)}
+                    required
+                  />
+                  {fieldErrors.phone
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>
+                    : <p className="text-xs text-gray-400 mt-1">e.g. +923001234567 or 03001234567</p>}
                 </div>
-                <input
-                  className={inputCls}
-                  placeholder="0334-1234567"
-                  required
-                  maxLength={12}
-                  value={form.phone}
-                  onChange={e => set("phone", formatPhone(e.target.value))}
-                  onFocus={() => setError("")}
-                />
-                <div className="flex items-center gap-1.5 mt-1">
-                  <p className="text-xs text-slate-400">{t("employer_register.phone_hint")}</p>
-                  <SpeakerButton textKey="employer_register.phone_hint" />
-                </div>
-              </div>
 
-              {/* Email */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {t("employer_register.email")}{" "}
-                    <span className="text-slate-400 font-normal">({t("employer_register.optional")})</span>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address{" "}
+                    <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
-                  <SpeakerButton textKey="employer_register.email" />
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="off"
+                    className={inputClass("email")}
+                    placeholder="email@example.com"
+                    value={form.email}
+                    onChange={(e) => setField("email", e.target.value)}
+                  />
+                  {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                 </div>
-                <input
-                  className={inputCls}
-                  placeholder="email@example.com"
-                  type="email"
-                  value={form.email}
-                  onChange={e => set("email", e.target.value.toLowerCase())}
-                  onBlur={e => set("email", e.target.value.trim())}
-                  onFocus={() => setError("")}
-                />
-              </div>
 
-              {/* Password */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {t("employer_register.password")} <span className="text-red-500">*</span>
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password <span className="text-red-500">*</span>
                   </label>
-                  <SpeakerButton textKey="employer_register.password" />
+                  <input
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    className={inputClass("password")}
+                    placeholder="Min 8 characters"
+                    value={form.password}
+                    onChange={(e) => setField("password", e.target.value)}
+                    required
+                  />
+                  {fieldErrors.password
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+                    : <p className="text-xs text-gray-400 mt-1">At least 8 characters with one special character (!@#$%^&*)</p>}
                 </div>
-                <input
-                  className={inputCls}
-                  placeholder={t("employer_register.password_placeholder")}
-                  type="password"
-                  required
-                  value={form.password}
-                  onChange={e => set("password", e.target.value)}
-                  onFocus={() => setError("")}
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  Min 8 characters with at least one special character (!@#$%^&*).
-                </p>
-              </div>
 
-              {/* Confirm Password */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {t("employer_register.confirm_password")} <span className="text-red-500">*</span>
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm Password <span className="text-red-500">*</span>
                   </label>
-                  <SpeakerButton textKey="employer_register.confirm_password" />
+                  <input
+                    name="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    className={inputClass("confirmPassword")}
+                    placeholder="Re-enter password"
+                    value={form.confirmPassword}
+                    onChange={(e) => setField("confirmPassword", e.target.value)}
+                    required
+                  />
+                  {fieldErrors.confirmPassword && (
+                    <p className="text-xs text-red-500 mt-1">{fieldErrors.confirmPassword}</p>
+                  )}
                 </div>
-                <input
-                  className={inputCls}
-                  placeholder={t("employer_register.confirm_password_placeholder")}
-                  type="password"
-                  required
-                  value={form.confirmPassword}
-                  onChange={e => set("confirmPassword", e.target.value)}
-                  onFocus={() => setError("")}
-                />
-              </div>
 
-              <button type="submit" disabled={loading}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-sm transition-all disabled:opacity-60 mt-2">
-                {loading ? t("employer_register.creating") : t("employer_register.submit")}
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                >
+                  {loading ? "Creating account…" : "Create Account & Send OTP"}
+                </button>
+              </form>
 
-              <p className="text-center text-sm text-slate-500">
-                {t("employer_register.have_account")}{" "}
-                <Link to="/login" className="text-teal-600 font-bold hover:underline">{t("employer_register.sign_in")}</Link>
+              <p className="text-center text-sm text-gray-500 mt-5">
+                Already have an account?{" "}
+                <Link to="/login" className="font-semibold text-teal-dark hover:underline">
+                  Login here
+                </Link>
               </p>
-            </form>
-          )}
-
-          {/* ── STEP 1: OTP ── */}
-          {step === 1 && (
-            <form onSubmit={verifyOtp} className="space-y-5">
-              <div className="text-center py-2">
-
-                <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Smartphone size={32} className="text-teal-500" strokeWidth={1.5} />
-                </div>
-
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <h2 className="text-base font-black text-slate-900">{t("employer_register.check_whatsapp")}</h2>
-                  <SpeakerButton textKey="employer_register.check_whatsapp" />
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5">
-                  <p className="text-sm text-slate-500">
-                    {t("employer_register.otp_sent_to")} <span className="font-bold text-teal-600">{form.phone}</span>
-                  </p>
-                  <SpeakerButton text={`${t("employer_register.otp_sent_to")} ${form.phone}`} />
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 mt-1">
-                  <p className="text-xs text-slate-400">{t("employer_register.otp_expires")}</p>
-                  <SpeakerButton textKey="employer_register.otp_expires" />
-                </div>
+              <p className="text-center text-sm text-gray-500 mt-2">
+                Looking for work?{" "}
+                <Link to="/register/worker" className="font-semibold text-teal-dark hover:underline">
+                  Register as Worker
+                </Link>
+              </p>
+            </>
+          ) : (
+            /* OTP Step */
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Smartphone className="w-8 h-8 text-teal" />
               </div>
+              <span className="inline-block bg-teal-light text-teal-dark text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">
+                Verification
+              </span>
+              <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Enter OTP Code</h2>
+              <p className="text-sm text-gray-500 mb-1">
+                A 6-digit code has been sent to <strong>{form.phone}</strong>
+              </p>
+              <p className="text-xs text-teal-600 font-medium mb-6">(Demo: use 1 2 3 4 5 6)</p>
 
-              {/* OTP inputs */}
-              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                {otp.map((d, i) => (
-                  <input key={i} id={`otp-emp-${i}`} value={d}
-                    onChange={e => handleOtpChange(i, e.target.value)}
-                    onKeyDown={e => handleOtpKey(i, e)}
-                    maxLength={1} inputMode="numeric"
-                    className="w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-slate-900"
+              {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+
+              <div className="flex gap-3 justify-center mb-6">
+                {otpDigits.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => (otpRefs.current[i] = el)}
+                    value={d}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKey(i, e)}
+                    maxLength={1}
+                    inputMode="numeric"
+                    className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal"
                   />
                 ))}
               </div>
 
-              <button type="submit" disabled={loading || otp.join("").length !== 6}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl text-sm transition-all disabled:opacity-50">
-                {loading ? t("employer_register.verifying") : t("employer_register.verify_btn")}
+              <button
+                onClick={verifyOtp}
+                disabled={loading}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed mb-4"
+              >
+                {loading ? "Verifying…" : "Verify & Continue"}
               </button>
 
-              {/* Resend row */}
-              <div className="flex items-center justify-center gap-1.5 text-sm text-slate-500">
-                {resendCooldown > 0 ? (
-                  <>
-                    <span>{t("employer_register.no_code")}</span>
-                    <span className="font-bold text-slate-700">{t("employer_register.resend_wait", { s: resendCooldown })}</span>
-                    <SpeakerButton text={`${t("employer_register.no_code")} ${t("employer_register.resend_wait", { s: resendCooldown })}`} />
-                  </>
-                ) : (
-                  <>
-                    <span>{t("employer_register.no_code")}</span>
-                    <SpeakerButton textKey="employer_register.no_code" />
-                    <button type="button" onClick={resendOtp} disabled={loading}
-                      className="text-teal-600 font-bold hover:underline disabled:opacity-50">
-                      {t("employer_register.resend_btn")}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Wrong number row */}
-              <div className="flex items-center justify-center gap-1.5 text-sm text-slate-400">
-                <span>{t("employer_register.wrong_number")}</span>
-                <SpeakerButton textKey="employer_register.wrong_number" />
-                <button type="button"
-                  onClick={() => { setStep(0); setOtp(["","","","","",""]); setError(""); }}
-                  className="text-slate-600 font-semibold hover:underline">
-                  {t("employer_register.go_back")}
+              <p className="text-sm text-gray-500">
+                Didn't receive the code?{" "}
+                <button
+                  onClick={() => {}}
+                  disabled={resendTimer > 0}
+                  className="font-semibold text-teal-dark disabled:opacity-40"
+                >
+                  Resend OTP
                 </button>
-              </div>
-            </form>
+                {resendTimer > 0 && (
+                  <span className="text-gray-400"> (available in {resendTimer}s)</span>
+                )}
+              </p>
+            </div>
           )}
         </div>
       </div>

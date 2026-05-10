@@ -520,8 +520,7 @@ export default function WorkerDashboard() {
             {[
               { label: "New Requests", value: pending.length,                   color: "text-yellow-600", icon: Bell         },
               { label: "Active Jobs",  value: active.length,                    color: "text-indigo-600", icon: TrendingUp   },
-              { label: "Completed",    value: profile?.totalCompletedJobs || 0, color: "text-green-600",  icon: CheckCircle2 },
-            ].map(s => (
+              { label: "Completed", value: jobs.filter(j => j.status === "Completed").length, color: "text-green-600", icon: CheckCircle2 },            ].map(s => (
               <div key={s.label} className="text-center">
                 <div className="flex justify-center mb-1">
                   <s.icon size={14} className={s.color} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../services/api";
@@ -63,15 +63,39 @@ function LabelRow({ textKey, required, className = "" }) {
   );
 }
 
-function HintRow({ textKey }) {
+function HintRow({ textKey, text }) {
   const { t } = useTranslation();
+  const display = text ?? t(textKey);
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <p className="text-xs text-slate-400">{t(textKey)}</p>
-      <SpeakerButton textKey={textKey} />
+      <p className="text-xs text-slate-400">{display}</p>
+      {textKey && <SpeakerButton textKey={textKey} />}
     </div>
   );
 }
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
+const formatCnic = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  if (digits.length <= 5)  return digits;
+  if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+};
+
+const blockNonAlpha = (e) => {
+  if (
+    !/^[a-zA-Z\s]$/.test(e.key) &&
+    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+};
 
 export default function WorkerRegister() {
   const { t } = useTranslation();
@@ -80,13 +104,13 @@ export default function WorkerRegister() {
   const [services, setServices]   = useState(FALLBACK_SERVICES);
   const [cnicFront, setCnicFront] = useState(null);
   const [form, setForm] = useState({
-    fullName:"",phone:"",password:"",confirmPassword:"",
-    cnicNumber:"",cnicExpiryDate:"",currentAddress:"",
-    fatherSpouseName:"",dateOfBirth:"",gender:"Male",
-    maritalStatus:"Single",employmentType:"Full-time",
-    preferredCity:"Lahore",maxTravelDistance:20,
-    services:[],daysAvailable:[],preferredAreas:[],preferredWorkingHours:[],
+    fullName:"", fatherSpouseName:"", dateOfBirth:"", gender:"Male",
+    maritalStatus:"Single", cnicNumber:"", phone:"",
+    currentAddress:"", password:"", confirmPassword:"",
+    employmentType:"Full-time", preferredCity:"Lahore", maxTravelDistance:20,
+    services:[], daysAvailable:[], preferredAreas:[], preferredWorkingHours:[],
   });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [otp, setOtp]                       = useState(["","","","","",""]);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError]                   = useState("");
@@ -100,34 +124,11 @@ export default function WorkerRegister() {
     t("worker_register.step_otp"),
   ];
 
-  // ── Max DOB: user must be at least 18 years old ──────────────────────────
-  const maxDob = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 18);
-    return d.toISOString().split("T")[0];
-  })();
-
-  // ── Min DOB: user must not be older than 60 years ────────────────────────
-  const minDob = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 60);
-    return d.toISOString().split("T")[0];
-  })();
-
-  // ── Phone formatter: 0300-1234567 ────────────────────────────────────────
-  const formatPhone = (value) => {
-    const digits = value.replace(/\D/g, "").slice(0, 11);
-    if (digits.length <= 4) return digits;
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-  };
-
-  // ── CNIC formatter: 12345-1234567-1 ──────────────────────────────────────
-  const formatCnic = (value) => {
-    const digits = value.replace(/\D/g, "").slice(0, 13);
-    if (digits.length <= 5)  return digits;
-    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
-  };
+  const today  = new Date();
+  const maxDob = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    .toISOString().split("T")[0];
+  const minDob = new Date(today.getFullYear() - 60, today.getMonth(), today.getDate())
+    .toISOString().split("T")[0];
 
   useEffect(() => {
     api.get("/services")
@@ -144,7 +145,57 @@ export default function WorkerRegister() {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
+  // ── Field setter with inline validation for phone, cnic, password ─────────
+  const setField = (k, v) => {
+    if (k === "fullName")         v = v.replace(/[^a-zA-Z\s]/g, "").slice(0, 60);
+    if (k === "fatherSpouseName") v = v.replace(/[^a-zA-Z\s]/g, "").slice(0, 60);
+
+    if (k === "phone") {
+      v = formatPhone(v);
+      const digits = v.replace(/\D/g, "");
+      if (digits.length >= 2 && !digits.startsWith("03"))
+        setFieldErrors(e => ({ ...e, phone: "Phone must start with 03." }));
+      else
+        setFieldErrors(e => ({ ...e, phone: undefined }));
+    }
+
+    if (k === "cnicNumber") {
+      v = formatCnic(v);
+      const digits = v.replace(/\D/g, "");
+      if (digits.length >= 5 && !digits.startsWith("35202"))
+        setFieldErrors(e => ({ ...e, cnicNumber: "CNIC must start with 35202." }));
+      else
+        setFieldErrors(e => ({ ...e, cnicNumber: undefined }));
+    }
+
+    if (k === "password") {
+      if (v.length > 0 && v.length < 8)
+        setFieldErrors(e => ({ ...e, password: "Password must be at least 8 characters." }));
+      else if (v.length >= 8 && !/[!@#$%^&*(),.?":{}|<>]/.test(v))
+        setFieldErrors(e => ({ ...e, password: 'Must contain at least one special character (!@#$%^&*).' }));
+      else
+        setFieldErrors(e => ({ ...e, password: undefined }));
+    }
+
+    if (k === "confirmPassword") {
+      setForm(f => {
+        if (v !== f.password)
+          setFieldErrors(e => ({ ...e, confirmPassword: "Passwords do not match." }));
+        else
+          setFieldErrors(e => ({ ...e, confirmPassword: undefined }));
+        return f;
+      });
+    }
+
+    if (!["phone", "cnicNumber", "password", "confirmPassword"].includes(k))
+      setFieldErrors(e => ({ ...e, [k]: undefined }));
+
+    setForm(f => ({ ...f, [k]: v }));
+  };
+
+  // ── Keep plain set() for non-step-0 fields (availability, etc.) ──────────
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
   const toggleArr = (key, val) =>
     setForm(f => ({
       ...f,
@@ -169,30 +220,58 @@ export default function WorkerRegister() {
     e.preventDefault();
   };
 
+  // ── Step validation (now also checks inline fieldErrors) ─────────────────
   const validateStep = () => {
     setError("");
+    const errs = {};
+
     if (step === 0) {
-      if (!form.fullName.trim())            return setError(t("worker_register.err_full_name")), false;
-      if (/\d/.test(form.fullName))         return setError("Full name must not contain numbers."), false;
-      if (!form.fatherSpouseName.trim())    return setError(t("worker_register.err_father_name")), false;
-      if (!form.dateOfBirth)                return setError(t("worker_register.err_dob")), false;
-      if (new Date(form.dateOfBirth) > new Date(maxDob))
-        return setError("You must be at least 18 years old to register."), false;
-      if (new Date(form.dateOfBirth) < new Date(minDob))
-        return setError("Age must not exceed 60 years."), false;
-      if (!form.cnicNumber.trim())          return setError(t("worker_register.err_cnic_required")), false;
-      if (!/^[0-9]{5}-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber))
-        return setError(t("worker_register.err_cnic_format")), false;
-      if (!form.phone.trim())               return setError(t("worker_register.err_phone_required")), false;
-      if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
-        return setError(t("worker_register.err_phone_format")), false;
-      if (!form.currentAddress.trim())      return setError(t("worker_register.err_address")), false;
-      if (!form.password)                   return setError(t("worker_register.err_password_required")), false;
-      if (form.password.length < 8)         return setError(t("worker_register.err_password_length")), false;
-      if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
-        return setError("Password must contain at least one special character."), false;
-      if (form.password !== form.confirmPassword) return setError(t("worker_register.err_password_match")), false;
+      if (!form.fullName.trim())
+        errs.fullName = "Full name is required.";
+      else if (form.fullName.trim().length < 3)
+        errs.fullName = "Name must be at least 3 characters.";
+
+      if (!form.fatherSpouseName.trim())
+        errs.fatherSpouseName = "Father/Spouse name is required.";
+      else if (form.fatherSpouseName.trim().length < 3)
+        errs.fatherSpouseName = "Name must be at least 3 characters.";
+
+      if (!form.dateOfBirth)
+        errs.dateOfBirth = t("worker_register.err_dob");
+      else if (form.dateOfBirth > maxDob)
+        errs.dateOfBirth = "You must be at least 18 years old to register.";
+      else if (form.dateOfBirth < minDob)
+        errs.dateOfBirth = "Age must not exceed 60 years.";
+
+      if (!form.cnicNumber.trim())
+        errs.cnicNumber = t("worker_register.err_cnic_required");
+      else if (!/^35202-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber.trim()))
+        errs.cnicNumber = t("worker_register.err_cnic_format");
+
+      if (!form.phone.trim())
+        errs.phone = t("worker_register.err_phone_required");
+      else if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone.trim()))
+        errs.phone = t("worker_register.err_phone_format");
+
+      if (!form.currentAddress.trim())
+        errs.currentAddress = t("worker_register.err_address");
+      else if (!/[a-zA-Z]/.test(form.currentAddress))
+        errs.currentAddress = "Address must contain letters, not just numbers.";
+
+      if (!form.password || form.password.length < 8)
+        errs.password = t("worker_register.err_password_length");
+      else if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
+        errs.password = "Password must contain at least one special character.";
+
+      if (form.password !== form.confirmPassword)
+        errs.confirmPassword = t("worker_register.err_password_match");
+
+      if (Object.keys(errs).length > 0) {
+        setFieldErrors(errs);
+        return false;
+      }
     }
+
     if (step === 1 && form.services.length === 0)
       return setError(t("worker_register.err_services")), false;
     if (step === 2 && form.daysAvailable.length === 0)
@@ -201,7 +280,7 @@ export default function WorkerRegister() {
   };
 
   const next = (e) => { e?.preventDefault(); if (validateStep()) setStep(s => s + 1); };
-  const back = () => { setError(""); setStep(s => s - 1); };
+  const back = () => { setError(""); setFieldErrors({}); setStep(s => s - 1); };
 
   const submitRegistration = async (e) => {
     e.preventDefault();
@@ -243,7 +322,14 @@ export default function WorkerRegister() {
     finally { setLoading(false); }
   };
 
-  const inputCls  = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all bg-white";
+  // ── Dynamic input class – turns red on field error ────────────────────────
+  const inputCls = (key) =>
+    `w-full border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all bg-white ${
+      fieldErrors[key]
+        ? "border-red-400 focus:ring-red-300 bg-red-50"
+        : "border-slate-200 focus:border-teal-500 focus:ring-teal-500/20"
+    }`;
+
   const selectCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all bg-white";
 
   return (
@@ -305,53 +391,74 @@ export default function WorkerRegister() {
               </div>
 
               <div className="space-y-4">
+
+                {/* Full Name */}
                 <div>
                   <LabelRow textKey="worker_register.full_name" required />
                   <input
-                    className={inputCls}
+                    className={inputCls("fullName")}
                     placeholder={t("worker_register.full_name_placeholder")}
                     value={form.fullName}
-                    onChange={e => {
-                      const val = e.target.value;
-                      if (/\d/.test(val)) {
-                        setError("Numbers are not allowed in full name.");
-                      } else {
-                        setError("");
-                        set("fullName", val);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!/\d/.test(form.fullName)) setError("");
-                    }}
+                    onKeyDown={blockNonAlpha}
+                    onChange={e => setField("fullName", e.target.value)}
                   />
+                  {fieldErrors.fullName
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.fullName}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Letters only</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Father/Spouse Name */}
                   <div>
                     <LabelRow textKey="worker_register.father_name" required />
-                    <input className={inputCls} placeholder={t("worker_register.father_name_placeholder")} value={form.fatherSpouseName} onChange={e => set("fatherSpouseName", e.target.value)} />
+                    <input
+                      className={inputCls("fatherSpouseName")}
+                      placeholder={t("worker_register.father_name_placeholder")}
+                      value={form.fatherSpouseName}
+                      onKeyDown={blockNonAlpha}
+                      onChange={e => setField("fatherSpouseName", e.target.value)}
+                    />
+                    {fieldErrors.fatherSpouseName
+                      ? <p className="text-xs text-red-500 mt-1">{fieldErrors.fatherSpouseName}</p>
+                      : <p className="text-xs text-slate-400 mt-1">Letters only</p>}
                   </div>
+
+                  {/* Date of Birth */}
                   <div>
                     <LabelRow textKey="worker_register.dob" required />
                     <input
-                      className={inputCls}
                       type="date"
+                      className={inputCls("dateOfBirth")}
                       min={minDob}
                       max={maxDob}
                       value={form.dateOfBirth}
-                      onChange={e => set("dateOfBirth", e.target.value)}
+                      onKeyDown={e => {
+                        if (!["Tab","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Delete","Backspace"].includes(e.key))
+                          e.preventDefault();
+                      }}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (!val) { setField("dateOfBirth", ""); return; }
+                        const year = parseInt(val.split("-")[0], 10);
+                        if (year > today.getFullYear()) return;
+                        setField("dateOfBirth", val);
+                      }}
                     />
-                    <HintRow textKey="worker_register.dob_hint" />
+                    {fieldErrors.dateOfBirth
+                      ? <p className="text-xs text-red-500 mt-1">{fieldErrors.dateOfBirth}</p>
+                      : <HintRow textKey="worker_register.dob_hint" />}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Gender */}
                   <div>
                     <LabelRow textKey="worker_register.gender" required />
                     <select className={selectCls} value={form.gender} onChange={e => set("gender", e.target.value)}>
                       {["Male","Female","Other"].map(g => <option key={g}>{g}</option>)}
                     </select>
                   </div>
+                  {/* Marital Status */}
                   <div>
                     <LabelRow textKey="worker_register.marital_status" />
                     <select className={selectCls} value={form.maritalStatus} onChange={e => set("maritalStatus", e.target.value)}>
@@ -360,46 +467,86 @@ export default function WorkerRegister() {
                   </div>
                 </div>
 
+                {/* CNIC */}
                 <div>
                   <LabelRow textKey="worker_register.cnic" required />
                   <input
-                    className={inputCls}
+                    className={inputCls("cnicNumber")}
                     placeholder="35202-XXXXXXX-X"
                     maxLength={15}
                     value={form.cnicNumber}
-                    onChange={e => set("cnicNumber", formatCnic(e.target.value))}
+                    onChange={e => setField("cnicNumber", e.target.value)}
                   />
-                  <HintRow textKey="worker_register.cnic_hint" />
+                  {fieldErrors.cnicNumber
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.cnicNumber}</p>
+                    : <HintRow textKey="worker_register.cnic_hint" />}
                 </div>
 
+                {/* Phone */}
                 <div>
                   <LabelRow textKey="worker_register.phone" required />
                   <input
-                    className={inputCls}
+                    className={inputCls("phone")}
                     placeholder="03XX-XXXXXXX"
                     maxLength={12}
                     value={form.phone}
-                    onChange={e => set("phone", formatPhone(e.target.value))}
+                    onChange={e => setField("phone", e.target.value)}
                   />
-                  <HintRow textKey="worker_register.phone_hint" />
+                  {fieldErrors.phone
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>
+                    : <HintRow textKey="worker_register.phone_hint" />}
                 </div>
 
+                {/* Current Address */}
                 <div>
                   <LabelRow textKey="worker_register.address" required />
-                  <input className={inputCls} placeholder={t("worker_register.address_placeholder")} value={form.currentAddress} onChange={e => set("currentAddress", e.target.value)} />
+                  <input
+                    className={inputCls("currentAddress")}
+                    placeholder={t("worker_register.address_placeholder")}
+                    value={form.currentAddress}
+                    onKeyDown={e => {
+                      if (["+","=","*","#","@","!","$","%","^","&","(",")",`_`].includes(e.key))
+                        e.preventDefault();
+                    }}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.length > 0 && !/[a-zA-Z]/.test(val)) return;
+                      setField("currentAddress", val);
+                    }}
+                  />
+                  {fieldErrors.currentAddress
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.currentAddress}</p>
+                    : <p className="text-xs text-slate-400 mt-1">e.g. House 5, Street 3, Lahore</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Password */}
                   <div>
                     <LabelRow textKey="worker_register.password" required />
-                    <input className={inputCls} type="password" placeholder={t("worker_register.password_placeholder")} value={form.password} onChange={e => set("password", e.target.value)} />
-                    <p className="text-xs text-slate-400 mt-1">
-                      Min 8 chars with at least one special character (!@#$%^&*).
-                    </p>
+                    <input
+                      type="password"
+                      className={inputCls("password")}
+                      placeholder={t("worker_register.password_placeholder")}
+                      value={form.password}
+                      onChange={e => setField("password", e.target.value)}
+                    />
+                    {fieldErrors.password
+                      ? <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+                      : <p className="text-xs text-slate-400 mt-1">Min 8 chars with at least one special character (!@#$%^&*).</p>}
                   </div>
+
+                  {/* Confirm Password */}
                   <div>
                     <LabelRow textKey="worker_register.confirm_password" required />
-                    <input className={inputCls} type="password" placeholder={t("worker_register.confirm_password_placeholder")} value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} />
+                    <input
+                      type="password"
+                      className={inputCls("confirmPassword")}
+                      placeholder={t("worker_register.confirm_password_placeholder")}
+                      value={form.confirmPassword}
+                      onChange={e => setField("confirmPassword", e.target.value)}
+                    />
+                    {fieldErrors.confirmPassword &&
+                      <p className="text-xs text-red-500 mt-1">{fieldErrors.confirmPassword}</p>}
                   </div>
                 </div>
               </div>
