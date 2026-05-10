@@ -68,7 +68,10 @@ export default function EmployerRegister() {
   };
 
   const resendOtp = async () => {
-    setError(""); setLoading(true);
+    setError("");
+    setOtp(["","","","","",""]);
+    setTimeout(() => document.getElementById("otp-emp-0")?.focus(), 0);  // focus box 1 instantly
+    setLoading(true);
     try {
       await api.post("/auth/resend-otp", { phone: form.phone });
       setResendCooldown(60);
