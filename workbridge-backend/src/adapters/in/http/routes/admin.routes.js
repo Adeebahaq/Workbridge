@@ -15,7 +15,7 @@ module.exports = function(controller) {
   router.patch("/workers/:workerId/reject",  (req, res, next) => controller.rejectWorker(req, res, next));
   router.post("/workers",                    (req, res, next) => controller.createWorker(req, res, next));
 
-  // ── Pending verifications list ──────────────────────────────────────────────
+  // ── Pending verifications list ── BEFORE /:workerId ────────────────────────
   router.get("/workers/pending", async (req, res, next) => {
     try {
       const pending = await WorkerProfile.find({ status: "Pending Verification" })
@@ -27,7 +27,7 @@ module.exports = function(controller) {
     } catch (e) { next(e); }
   });
 
-  // ── All workers (with optional status filter) ───────────────────────────────
+  // ── All workers (with optional status filter) ── BEFORE /:workerId ─────────
   router.get("/workers/all", async (req, res, next) => {
     try {
       const query = {};
@@ -42,7 +42,7 @@ module.exports = function(controller) {
     } catch (e) { next(e); }
   });
 
-  // ── Single worker detail (for admin review modal) ───────────────────────────
+  // ── Single worker detail ── AFTER static routes ─────────────────────────────
   router.get("/workers/:workerId", async (req, res, next) => {
     try {
       const worker = await WorkerProfile.findById(req.params.workerId)
@@ -54,7 +54,7 @@ module.exports = function(controller) {
     } catch (e) { next(e); }
   });
 
-  // ── Suspend / unsuspend worker ──────────────────────────────────────────────
+  // ── Suspend / activate worker ───────────────────────────────────────────────
   router.patch("/workers/:workerId/suspend", async (req, res, next) => {
     try {
       const worker = await WorkerProfile.findByIdAndUpdate(
