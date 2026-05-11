@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../services/api";
 import { Check, Smartphone } from "lucide-react";
 
@@ -13,6 +14,7 @@ const blockNonAlpha = (e) => {
 };
 
 export default function EmployerRegister() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -91,46 +93,58 @@ export default function EmployerRegister() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!validate()) return;
+    if (form.password !== form.confirmPassword) return setError(t("employer_register.error_password_match"));
+    if (form.password.length < 8) return setError(t("employer_register.error_password_length"));
+    if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone)) return setError(t("employer_register.error_phone_format"));
     setLoading(true);
     try {
       await api.post("/auth/register/employer", {
         fullName: form.fullName,
-        phone: form.phone,
-        email: form.email,
+        phone:    form.phone,
+        email:    form.email,
         password: form.password,
       });
-      setResendTimer(60);
+      setResendCooldown(60);
       setStep(1);
-    } catch (err) {
-      setError(err.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message || t("employer_register.error_default")); }
+    finally { setLoading(false); }
   };
 
-  const handleOtpChange = (i, v) => {
-    const d = [...otpDigits];
-    d[i] = v.slice(-1);
-    setOtpDigits(d);
-    if (v && i < 5) otpRefs.current[i + 1]?.focus();
+  const verifyOtp = async (e) => {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    try {
+      await api.post("/auth/verify-otp", { phone: form.phone, otp: otp.join("") });
+      navigate("/login", { state: { message: t("employer_register.verified_message") } });
+    } catch (err) { setError(err.message || t("employer_register.error_otp")); }
+    finally { setLoading(false); }
+  };
+
+  const resendOtp = async () => {
+    setError(""); setLoading(true);
+    try {
+      await api.post("/auth/resend-otp", { phone: form.phone });
+      setResendCooldown(60);
+    } catch (err) { setError(err.message || t("employer_register.error_resend")); }
+    finally { setLoading(false); }
+  };
+
+  const handleOtpChange = (i, val) => {
+    const digit = val.replace(/\D/g, "").slice(-1);
+    const next = [...otp]; next[i] = digit; setOtp(next);
+    if (digit && i < 5) document.getElementById(`otp-emp-${i + 1}`)?.focus();
   };
   const handleOtpKey = (i, e) => {
-    if (e.key === "Backspace" && !otpDigits[i] && i > 0) otpRefs.current[i - 1]?.focus();
+    if (e.key === "Backspace" && !otp[i] && i > 0) document.getElementById(`otp-emp-${i - 1}`)?.focus();
   };
-
-  const verifyOtp = async () => {
-    const otp = otpDigits.join("");
-    if (otp.length < 6) return setError("Enter all 6 digits");
-    setLoading(true);
-    try {
-      await api.post("/auth/verify-otp", { phone: form.phone, otp });
-      navigate("/login");
-    } catch (err) {
-      setError(err.message || "Invalid OTP");
-    } finally {
-      setLoading(false);
-    }
+  const handleOtpPaste = (e) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const next = [...otp];
+    pasted.split("").forEach((d, i) => { next[i] = d; });
+    setOtp(next);
+    document.getElementById(`otp-emp-${Math.min(pasted.length, 5)}`)?.focus();
+    e.preventDefault();
   };
 
   const inputClass = (key) =>

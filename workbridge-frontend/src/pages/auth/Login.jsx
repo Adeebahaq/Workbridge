@@ -56,7 +56,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8 font-sans pt-[72px]">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-6 sm:p-8">
 
         {/* Logo icon */}
         <div className="flex justify-center mb-5">
@@ -67,7 +67,7 @@ export default function Login() {
 
         {/* Title */}
         <div className="flex items-center justify-center gap-2 mb-1">
-          <h1 className="text-[22px] font-black text-slate-900 text-center">{t("login.title")}</h1>
+          <h1 className="text-xl sm:text-[22px] font-black text-slate-900 text-center">{t("login.title")}</h1>
           <SpeakerButton textKey="login.title" />
         </div>
 
@@ -141,7 +141,7 @@ export default function Login() {
 
         {/* Register links */}
         <div className="mt-5 space-y-2 text-center text-sm text-slate-500">
-          <div className="flex items-center justify-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
             <p>
               {t("login.new_worker")}{" "}
               <Link to="/register/worker" className="text-slate-900 font-black hover:text-teal-600 transition-colors">
@@ -150,7 +150,7 @@ export default function Login() {
             </p>
             <SpeakerButton textKey="login.new_worker" />
           </div>
-          <div className="flex items-center justify-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
             <p>
               {t("login.new_employer")}{" "}
               <Link to="/register/employer" className="text-slate-900 font-black hover:text-teal-600 transition-colors">

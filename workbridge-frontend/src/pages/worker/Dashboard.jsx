@@ -63,22 +63,11 @@ function fmt(date) {
   });
 }
 
-/**
- * Builds display info for the cost box shown on the worker's job card.
- *
- * For Hourly / Daily  → derive quantity from estimatedCost ÷ rate, then show
- *                        a single "N hours/days @ PKR X/unit → PKR Y" row.
- * For Weekly / Monthly → build duration label from start/end dates only.
- *                        Always use job.estimatedCost as the total — never
- *                        recalculate — so the worker sees exactly what the
- *                        employer agreed to pay.
- */
 function getDurationAndBreakdown(job) {
   const type      = job.hiringType;
   const totalCost = Number(job.estimatedCost) || 0;
   const pricing   = job.servicePricing?.[0] || {};
 
-  // ── Hourly ──
   if (type === "Hourly") {
     const hourlyRate = Number(pricing.hourlyRate) || 0;
     const hours      = job.quantity || (hourlyRate > 0 && totalCost > 0 ? Math.round(totalCost / hourlyRate) : null);
@@ -89,7 +78,6 @@ function getDurationAndBreakdown(job) {
     return { durationLabel, breakdown, totalCost };
   }
 
-  // ── Daily ──
   if (type === "Daily") {
     const dailyRate = Number(pricing.dailyRate) || 0;
     const days      = job.quantity || (dailyRate > 0 && totalCost > 0 ? Math.round(totalCost / dailyRate) : null);
@@ -100,7 +88,6 @@ function getDurationAndBreakdown(job) {
     return { durationLabel, breakdown, totalCost };
   }
 
-  // ── Weekly / Monthly ──
   if ((type === "Weekly" || type === "Monthly") && job.startDate && job.endDate) {
     const s         = new Date(job.startDate);
     const e         = new Date(job.endDate);
@@ -129,7 +116,7 @@ function RejectModal({ job, onClose, onConfirm }) {
   const [reason, setReason] = useState(REJECTION_REASONS[0]);
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 sm:p-6">
         <h3 className="font-bold text-slate-800 mb-1">Reject Job Request</h3>
         <p className="text-sm text-slate-500 mb-4">Select a reason for rejecting this request.</p>
         <select
@@ -155,7 +142,7 @@ function RejectModal({ job, onClose, onConfirm }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CostBreakdownBox  — shown inside the job card
+// CostBreakdownBox
 // ─────────────────────────────────────────────────────────────────────────────
 function CostBreakdownBox({ durationLabel, breakdown, totalCost, hiringType, startDate, endDate }) {
   if (!totalCost) return null;
@@ -166,7 +153,6 @@ function CostBreakdownBox({ durationLabel, breakdown, totalCost, hiringType, sta
   return (
     <div className="mt-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 space-y-2.5">
 
-      {/* ── Row 1: Duration pill + date range (Weekly/Monthly) ── */}
       {durationLabel && (
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 bg-teal-50 border border-teal-200 text-teal-700 px-2.5 py-1 rounded-full text-[11px] font-bold">
@@ -181,7 +167,6 @@ function CostBreakdownBox({ durationLabel, breakdown, totalCost, hiringType, sta
         </div>
       )}
 
-      {/* ── Row 2: Rate info ── */}
       {breakdown && breakdown.length > 0 && (
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
@@ -194,7 +179,6 @@ function CostBreakdownBox({ durationLabel, breakdown, totalCost, hiringType, sta
         </div>
       )}
 
-      {/* ── Row 3: Total earnings (always shown) ── */}
       <div className="flex items-center justify-between border-t border-slate-200 pt-2">
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
           <Banknote size={12} className="text-teal-500" />
@@ -232,40 +216,40 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
   const { durationLabel, breakdown, totalCost, totalDays } = getDurationAndBreakdown(job);
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border transition-all ${isNew ? "border-yellow-200 shadow-yellow-50" : "border-slate-100"} p-5`}>
+    <div className={`bg-white rounded-2xl shadow-sm border transition-all ${isNew ? "border-yellow-200 shadow-yellow-50" : "border-slate-100"} p-4 sm:p-5`}>
 
       {/* ── Top row ── */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
 
           {/* Icon */}
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isNew ? "bg-yellow-50 text-yellow-600" : "bg-slate-100 text-slate-500"}`}>
-            <HiringIcon size={18} />
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${isNew ? "bg-yellow-50 text-yellow-600" : "bg-slate-100 text-slate-500"}`}>
+            <HiringIcon size={16} />
           </div>
 
           <div className="min-w-0 flex-1">
 
             {/* Title + NEW badge */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-bold text-slate-800 text-sm">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <p className="font-bold text-slate-800 text-xs sm:text-sm leading-snug">
                 {typeof job.serviceId === "object" ? job.serviceId?.name : "Service"} — {job.hiringType} Hire
               </p>
               {isNew && (
-                <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
                   New
                 </span>
               )}
             </div>
 
             {/* Employer + location */}
-            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1 sm:gap-1.5 mt-0.5 text-xs text-slate-500 flex-wrap">
               <User size={10} />
-              <span>{job.employerId?.fullName || "Employer"}</span>
+              <span className="truncate max-w-[100px] sm:max-w-none">{job.employerId?.fullName || "Employer"}</span>
               {job.description && (
                 <>
                   <span className="text-slate-300">·</span>
-                  <MapPin size={10} />
-                  <span className="truncate max-w-[160px]">{job.description.split("—")[0]?.trim() || "—"}</span>
+                  <MapPin size={10} className="shrink-0" />
+                  <span className="truncate max-w-[100px] sm:max-w-[160px]">{job.description.split("—")[0]?.trim() || "—"}</span>
                 </>
               )}
             </div>
@@ -290,24 +274,24 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
           </div>
         </div>
 
-        {/* Status badge */}
-        <span className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[job.status] || "bg-gray-100 text-gray-500"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[job.status] || "bg-gray-400"}`} />
-          {job.status}
+        {/* Status badge — hidden label on xs, shown on sm+ */}
+        <span className={`shrink-0 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${STATUS_STYLE[job.status] || "bg-gray-100 text-gray-500"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[job.status] || "bg-gray-400"}`} />
+          <span className="hidden xs:inline sm:inline">{job.status}</span>
         </span>
       </div>
 
       {/* ── Action buttons ── */}
       {(isNew || isAccepted || isActive) && (
-        <div className="flex gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-4">
           {isNew && (
             <>
               <button disabled={loading} onClick={() => onAccept(job._id)}
-                className="flex items-center gap-1.5 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                className="flex items-center gap-1.5 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all">
                 <CheckCircle2 size={13} /> Accept
               </button>
               <button disabled={loading} onClick={() => onReject(job)}
-                className="flex items-center gap-1.5 border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                className="flex items-center gap-1.5 border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all">
                 <XCircle size={13} /> Reject
               </button>
             </>
@@ -315,7 +299,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
           {isAccepted && (
             <div className="flex flex-col gap-1">
               <button disabled={loading || !jobDatePassed} onClick={() => onStartJob(job._id)}
-                className="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                className="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all">
                 <PlayCircle size={13} /> Start Job
               </button>
               {!jobDatePassed && (
@@ -325,7 +309,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
           )}
           {isActive && (
             <button disabled={loading} onClick={() => onMarkDone(job._id)}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all">
               <CheckCircle2 size={13} /> Mark as Done
             </button>
           )}
@@ -338,7 +322,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
 
       {/* ── Expanded details ── */}
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600">
+        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600">
           <div className="flex items-center gap-1.5">
             <HiringIcon size={11} className="text-slate-400 shrink-0" />
             <span className="text-slate-400">Type:</span>
@@ -363,7 +347,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
                 <span className="font-semibold">{fmt(job.endDate)}</span>
               </div>
               {totalDays && (
-                <div className="flex items-center gap-1.5 col-span-2">
+                <div className="flex items-center gap-1.5 col-span-1 sm:col-span-2">
                   <Timer size={11} className="text-slate-400 shrink-0" />
                   <span className="text-slate-400">Total Duration:</span>
                   <span className="font-semibold text-blue-600">{durationLabel}</span>
@@ -373,7 +357,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
           )}
 
           {totalCost > 0 && (
-            <div className="flex items-center gap-1.5 col-span-2">
+            <div className="flex items-center gap-1.5 col-span-1 sm:col-span-2">
               <Banknote size={11} className="text-teal-500 shrink-0" />
               <span className="text-slate-400">Est. Earnings:</span>
               <span className="font-black text-teal-600">PKR {totalCost.toLocaleString()}</span>
@@ -381,7 +365,7 @@ function JobCard({ job, onAccept, onReject, onStartJob, onMarkDone, loading }) {
           )}
 
           {job.requestExpiresAt && (
-            <div className="flex items-center gap-1.5 col-span-2">
+            <div className="flex items-center gap-1.5 col-span-1 sm:col-span-2">
               <AlertCircle size={11} className="text-orange-400 shrink-0" />
               <span className="text-slate-400">Expires:</span>
               <span className="font-semibold text-orange-600">{fmt(job.requestExpiresAt)}</span>
@@ -469,9 +453,9 @@ export default function WorkerDashboard() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-lg text-white transition-all flex items-center gap-2 ${toast.type === "error" ? "bg-red-500" : "bg-teal-500"}`}>
+        <div className={`fixed top-4 right-4 sm:top-5 sm:right-5 z-50 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm font-semibold shadow-lg text-white transition-all flex items-center gap-2 max-w-[calc(100vw-2rem)] ${toast.type === "error" ? "bg-red-500" : "bg-teal-500"}`}>
           {toast.type === "error" ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-          {toast.msg}
+          <span className="truncate">{toast.msg}</span>
         </div>
       )}
 
@@ -484,49 +468,50 @@ export default function WorkerDashboard() {
         />
       )}
 
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Profile Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-xl">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-lg sm:text-xl shrink-0">
                 {(profile?.userId?.fullName || "W").split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase()}
               </div>
-              <div>
-                <p className="font-bold text-slate-800 text-base">{profile?.userId?.fullName || "Worker"}</p>
-                <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+              <div className="min-w-0">
+                <p className="font-bold text-slate-800 text-sm sm:text-base truncate">{profile?.userId?.fullName || "Worker"}</p>
+                <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-500 mt-0.5 flex-wrap">
                   <span className="flex items-center gap-1"><MapPin size={10} />{profile?.preferredCity || "—"}</span>
                   <span className="flex items-center gap-1"><Star size={10} className="text-amber-400" />{profile?.averageRating?.toFixed(1) || "0.0"}</span>
                   <span className="flex items-center gap-1"><Briefcase size={10} />{jobs.filter(j => j.status === "Completed").length} Jobs</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-none">
                   {profile?.services?.map(s => typeof s === "object" ? s.name : "").filter(Boolean).join(", ") || ""}
                 </p>
               </div>
             </div>
-            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+            <span className={`shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold ${
               profile?.availabilityBadge === "Available"
                 ? "bg-green-100 text-green-700"
                 : "bg-red-100 text-red-600"
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${profile?.availabilityBadge === "Available" ? "bg-green-500" : "bg-red-400"}`} />
-              {profile?.availabilityBadge || "Available"}
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${profile?.availabilityBadge === "Available" ? "bg-green-500" : "bg-red-400"}`} />
+              <span className="hidden xs:inline sm:inline">{profile?.availabilityBadge || "Available"}</span>
             </span>
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-slate-100">
             {[
-              { label: "New Requests", value: pending.length,                   color: "text-yellow-600", icon: Bell         },
-              { label: "Active Jobs",  value: active.length,                    color: "text-indigo-600", icon: TrendingUp   },
-              { label: "Completed", value: jobs.filter(j => j.status === "Completed").length, color: "text-green-600", icon: CheckCircle2 },            ].map(s => (
+              { label: "New Requests", value: pending.length,                                       color: "text-yellow-600", icon: Bell         },
+              { label: "Active Jobs",  value: active.length,                                        color: "text-indigo-600", icon: TrendingUp   },
+              { label: "Completed",    value: jobs.filter(j => j.status === "Completed").length,    color: "text-green-600",  icon: CheckCircle2 },
+            ].map(s => (
               <div key={s.label} className="text-center">
                 <div className="flex justify-center mb-1">
-                  <s.icon size={14} className={s.color} />
+                  <s.icon size={13} className={s.color} />
                 </div>
-                <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{s.label}</p>
+                <p className={`text-xl sm:text-2xl font-black ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 leading-tight">{s.label}</p>
               </div>
             ))}
           </div>
@@ -534,8 +519,8 @@ export default function WorkerDashboard() {
 
         {/* New Requests Banner */}
         {pending.length > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-5 py-3 flex items-center gap-3">
-            <Bell size={18} className="text-yellow-500 shrink-0" />
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 sm:px-5 py-3 flex items-start sm:items-center gap-3">
+            <Bell size={16} className="text-yellow-500 shrink-0 mt-0.5 sm:mt-0" />
             <div>
               <p className="text-sm font-bold text-yellow-800">
                 {pending.length} New Request{pending.length > 1 ? "s" : ""} Pending
@@ -549,12 +534,12 @@ export default function WorkerDashboard() {
         <div className="flex gap-1 bg-white rounded-2xl p-1 shadow-sm border border-slate-100">
           {TABS.map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
                 tab === t ? "bg-slate-900 text-white shadow" : "text-slate-500 hover:text-slate-700"
               }`}>
-              {t}
+              <span className="truncate">{t}</span>
               {TAB_COUNT[t] > 0 && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black shrink-0 ${
                   tab === t ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
                 }`}>
                   {TAB_COUNT[t]}
@@ -567,8 +552,8 @@ export default function WorkerDashboard() {
         {/* Job List */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
-              <Briefcase size={32} className="text-slate-200 mx-auto mb-3" />
+            <div className="bg-white rounded-2xl border border-slate-100 p-8 sm:p-10 text-center">
+              <Briefcase size={28} className="text-slate-200 mx-auto mb-3" />
               <p className="text-slate-500 font-semibold text-sm">No jobs in this category</p>
               <p className="text-slate-400 text-xs mt-1">New requests will appear here</p>
             </div>
