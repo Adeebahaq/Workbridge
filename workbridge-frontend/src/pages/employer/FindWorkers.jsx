@@ -86,7 +86,7 @@ function DarkCostCard({ hiringType, breakdown, total }) {
       <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Estimated Cost</p>
       <p className="text-white font-black text-2xl mt-1">PKR {total.toLocaleString()}</p>
       <p className="text-slate-400 text-xs">{breakdown.map(b=>b.label).join(" + ")}</p>
-      <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-800 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-800 text-xs">
         <div>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1.5">⊙ SUMMARY</p>
           <div className="space-y-1">
@@ -127,8 +127,8 @@ function WorkerProfileModal({ worker, onClose, onHire }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex" onClick={e=>e.stopPropagation()}>
-        <div className="w-56 shrink-0 bg-[#0F172A] flex flex-col p-5 gap-3 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col sm:flex-row" onClick={e=>e.stopPropagation()}>
+        <div className="w-full sm:w-56 sm:shrink-0 bg-[#0F172A] flex flex-col p-5 gap-3 overflow-y-auto">
           <div className="w-14 h-14 rounded-2xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black text-xl">{initials}</div>
           <div>
             <p className="text-white font-black text-base leading-tight">{name}</p>
@@ -340,7 +340,7 @@ function HireModal({ worker, onClose, onSuccess }) {
           {/* Hiring Type */}
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hiring Type *</label>
-            <div className="grid grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
               {["Hourly","Daily","Weekly","Monthly"].map(t=>(
                 <button key={t} onClick={()=>{ set("hiringType",t); setErrors({}); }}
                   className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-0.5 ${
@@ -440,7 +440,7 @@ function HireModal({ worker, onClose, onSuccess }) {
           {/* ── WEEKLY / MONTHLY ── */}
           {needsDates && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div id="field-startDate">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Start Date *</label>
                   <input type="date" value={form.startDate} min={today}
@@ -568,9 +568,8 @@ export default function FindWorkers() {
       {viewWorker&&!hireWorker&&<WorkerProfileModal worker={viewWorker} onClose={()=>setViewWorker(null)} onHire={w=>{setViewWorker(null);setHireWorker(w);}}/>}
       {hireWorker&&<HireModal worker={hireWorker} onClose={()=>setHireWorker(null)} onSuccess={()=>{setHireWorker(null);showToast("✅ Job request sent!");}}/>}
 
-      <div className="flex gap-5 p-6 max-w-6xl mx-auto">
-        {/* Filter Sidebar */}
-        <div className="w-52 shrink-0">
+    <div className="flex flex-col md:flex-row gap-5 p-3 md:p-6 max-w-6xl mx-auto">
+      <div className="w-full md:w-52 md:shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sticky top-4 space-y-4">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-700">🔍 Filters</div>
             <div>
@@ -616,7 +615,7 @@ export default function FindWorkers() {
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
             <div>
               <h1 className="text-xl font-black text-slate-800">Find Workers</h1>
               <p className="text-sm text-slate-400">Browse verified workers in your area</p>
@@ -637,7 +636,7 @@ export default function FindWorkers() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
             {workers.map(w=>{
               const wname=w.userId?.fullName||"Worker";
               const winit=wname.split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase();

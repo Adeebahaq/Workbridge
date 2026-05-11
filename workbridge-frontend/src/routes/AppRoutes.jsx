@@ -38,7 +38,6 @@ function PrivateRoute({ children, role }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) return <Navigate to={getDashboard(user.role)} replace />;
-  if (user.role === "admin") return children;
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
@@ -62,7 +61,10 @@ export default function AppRoutes() {
       <Route path="/worker/chat/:jobId" element={<PrivateRoute role="worker"><WorkerChat /></PrivateRoute>} />
 
       {/* Employer routes */}
-      <Route path="/employer/dashboard"     element={<PrivateRoute role="employer"><EmployerDashboard /></PrivateRoute>} />
+      <Route path="/admin/dashboard" element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
+      <Route path="/admin/verify"    element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
+      <Route path="/admin/workers"   element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
+      <Route path="/admin/stats"     element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
       <Route path="/employer/workers"       element={<PrivateRoute role="employer"><FindWorkers /></PrivateRoute>} />
       <Route path="/employer/jobs"          element={<PrivateRoute role="employer"><JobRequests /></PrivateRoute>} />
       <Route path="/employer/chat"          element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />

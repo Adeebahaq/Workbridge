@@ -175,14 +175,12 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden">
-
-      {/* ── Contacts Sidebar ── */}
-      <div className="w-64 shrink-0 bg-white border-r border-slate-100 flex flex-col">
+<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden">
+  <div className="w-16 sm:w-64 shrink-0 bg-white border-r border-slate-100 flex flex-col">
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
             <MessageSquare size={14} className="text-teal-500" />
-            Messages
+            <span className="hidden sm:inline">Messages</span>
           </h2>
         </div>
 
@@ -223,7 +221,7 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 hidden sm:block">
                   <p className={`text-xs font-bold truncate ${isActive ? "text-teal-700" : "text-slate-700"}`}>
                     {ename}
                   </p>
@@ -289,7 +287,7 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
                     </div>
                   )}
                   <div
-                    className={`max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm leading-relaxed
+                    className={`max-w-[70vw] sm:max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm leading-relaxed
                       ${isMine
                         ? "bg-[#0F172A] text-white rounded-br-sm"
                         : "bg-white shadow-sm text-slate-800 border border-slate-100 rounded-bl-sm"
@@ -317,11 +315,11 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
           </div>
 
           {/* ── Input Bar ── */}
-          <div className="bg-white border-t border-slate-100 px-5 py-3 flex flex-col gap-2 shrink-0">
+          <div className="bg-white border-t border-slate-100 px-3 sm:px-5 py-3 flex flex-col gap-2 shrink-0">
 
             {/* ✅ FIX 6: audio preview strip shown after recording stops */}
             {audioURL && !recording && (
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex-wrap">
                 <Play size={14} className="text-teal-500 shrink-0" />
                 <audio controls src={audioURL} className="flex-1 h-7" />
                 <button onClick={discardRecording} className="text-slate-400 hover:text-red-500 transition-colors">
@@ -336,9 +334,9 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
               </div>
             )}
 
-            <div className="flex gap-3">
-              <input
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
+            <div className="flex gap-2 sm:gap-3">
+  <input
+    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
                 placeholder={recording ? "Recording…" : "Type your message here..."}
                 maxLength={500}
                 value={text}

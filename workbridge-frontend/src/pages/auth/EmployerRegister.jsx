@@ -41,27 +41,11 @@ export default function EmployerRegister() {
       });
       setResendCooldown(60);
       setStep(1);
-    } catch (err) { setError(err.message || t("employer_register.error_default")); }
-    finally { setLoading(false); }
-  };
-
-  const verifyOtp = async (e) => {
-    e.preventDefault();
-    setError(""); setLoading(true);
-    try {
-      await api.post("/auth/verify-otp", { phone: form.phone, otp: otp.join("") });
-      navigate("/login", { state: { message: t("employer_register.verified_message") } });
-    } catch (err) { setError(err.message || t("employer_register.error_otp")); }
-    finally { setLoading(false); }
-  };
-
-  const resendOtp = async () => {
-    setError(""); setLoading(true);
-    try {
-      await api.post("/auth/resend-otp", { phone: form.phone });
-      setResendCooldown(60);
-    } catch (err) { setError(err.message || t("employer_register.error_resend")); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpChange = (i, val) => {

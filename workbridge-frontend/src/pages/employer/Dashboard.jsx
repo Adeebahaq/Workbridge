@@ -69,7 +69,7 @@ export default function EmployerDashboard() {
     <div className="max-w-5xl mx-auto space-y-6">
 
       {/* Welcome Banner */}
-      <div className="bg-[#0F172A] rounded-2xl p-6 text-white flex items-center justify-between">
+      <div className="bg-[#0F172A] rounded-2xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <p className="text-slate-400 text-sm font-semibold">Good day,</p>
           <h1 className="text-2xl font-black mt-0.5">
@@ -144,7 +144,7 @@ export default function EmployerDashboard() {
               const workerName = job.workerId?.fullName || "Worker";
               const initials = workerName.split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
               return (
-                <div key={job._id} className="flex items-center gap-4 px-5 py-3.5">
+                <div key={job._id} className="flex items-center gap-3 px-3 sm:px-5 py-3.5 flex-wrap sm:flex-nowrap">
                   <div className="w-9 h-9 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-600 font-black text-xs shrink-0">
                     {initials}
                   </div>
