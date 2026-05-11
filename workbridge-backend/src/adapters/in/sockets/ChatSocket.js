@@ -3,9 +3,10 @@ const { verifyToken } = require("../../../shared/utils/jwt");
 function makeKey(a, b) { return [a, b].map(String).sort().join("_"); }
 
 class ChatSocket {
-  constructor({ sendMessageUseCase, getMessagesUseCase }) {
+  constructor({ sendMessageUseCase, getMessagesUseCase, notificationRepo }) {
     this.sendMessageUseCase = sendMessageUseCase;
     this.getMessagesUseCase = getMessagesUseCase;
+    this.notificationRepo   = notificationRepo; // ✅ now injected from container
   }
 
   init(io) {
@@ -18,7 +19,6 @@ class ChatSocket {
     });
 
     io.on("connection", (socket) => {
-      // ✅ Join personal room for notification toasts
       const userId = socket.user?.userId;
       if (userId) socket.join(`user_${userId}`);
 
@@ -29,40 +29,47 @@ class ChatSocket {
 
       socket.on("send_message", async (data) => {
         try {
-        const msg = await this.sendMessageUseCase.execute({
-          senderId:    socket.user.userId,
-          receiverId:  data.receiverId,
-          text: data.text || null,
-          audioUrl:    data.audioUrl,
-          duration:    data.duration,
-          messageType: data.messageType,
-        });
+          const msg = await this.sendMessageUseCase.execute({
+            senderId:    socket.user.userId,
+            receiverId:  data.receiverId,
+            text:        data.text || null,
+            audioUrl:    data.audioUrl,
+            duration:    data.duration,
+            messageType: data.messageType,
+          });
 
           const room = `chat_${makeKey(String(socket.user.userId), String(data.receiverId))}`;
           io.to(room).emit("new_message", msg);
 
-          // ✅ Push toast notification to receiver's personal room
-          io.to(`user_${data.receiverId}`).emit("new_notification", {
-            _id:    `msg_${msg._id || Date.now()}`,
-            type:   "new_message",
-            title:  "New Message",
-            body: msg.messageType === "voice" ? "🎙️ Voice message" : (msg.text?.length > 80 ? msg.text.slice(0, 80) + "…" : msg.text),
-            sentAt: msg.createdAt || new Date().toISOString(),
-            isRead: false,
-          });
+          // ✅ Save to DB first — repo emits "new_notification" with real MongoDB _id
+          if (this.notificationRepo) {
+            const body = msg.messageType === "voice"
+              ? "🎙️ Voice message"
+              : (msg.text?.length > 80 ? msg.text.slice(0, 80) + "…" : msg.text);
+
+            await this.notificationRepo.save({
+              userId: data.receiverId,
+              type:   "new_message",
+              title:  "New Message",
+              body,
+              sentAt: msg.createdAt || new Date(),
+              isRead: false,
+            });
+            // No manual io.emit needed — MongoNotificationRepository.save() does it already
+          }
 
         } catch (e) { socket.emit("error", e.message); }
       });
 
       socket.on("mark_read", async ({ messageId }) => {
-      try {
-        const msg = await this.getMessagesUseCase.messageRepository.markRead(messageId);
-        if (msg) {
-          const room = `chat_${makeKey(socket.user.userId, String(msg.senderId))}`;
-          io.to(room).emit("message_read", { messageId, readAt: msg.readAt });
-        }
-      } catch (e) { socket.emit("error", e.message); }
-    });
+        try {
+          const msg = await this.getMessagesUseCase.messageRepository.markRead(messageId);
+          if (msg) {
+            const room = `chat_${makeKey(socket.user.userId, String(msg.senderId))}`;
+            io.to(room).emit("message_read", { messageId, readAt: msg.readAt });
+          }
+        } catch (e) { socket.emit("error", e.message); }
+      });
 
       socket.on("get_messages", async ({ otherUserId }) => {
         try {
