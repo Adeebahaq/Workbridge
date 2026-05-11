@@ -81,12 +81,6 @@ const SERVICE_TRANS_KEYS = {
   "Security Guards":  { name: "services.security",     sub: "services.security_sub" },
 };
 
-const REVIEW_KEYS = [
-  { name: "Ali Mahmood", roleKey: "reviews.role1", textKey: "reviews.text1", stars: 5 },
-  { name: "Sara Baig",   roleKey: "reviews.role2", textKey: "reviews.text2", stars: 5 },
-  { name: "Fatima Asif", roleKey: "reviews.role3", textKey: "reviews.text3", stars: 5 },
-];
-
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -98,6 +92,8 @@ export default function Home() {
   const [workers, setWorkers]               = useState([]);
   const [workersLoading, setWorkersLoading] = useState(true);
   const [showAllWorkers, setShowAllWorkers] = useState(false);
+  const [reviews, setReviews]               = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     api.get("/services")
@@ -116,6 +112,16 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => setWorkersLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.get("/workers/public-reviews")
+      .then(res => {
+        const list = Array.isArray(res) ? res : res?.data;
+        if (Array.isArray(list) && list.length > 0) setReviews(list);
+      })
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
   }, []);
 
   // --- Data Arrays ---
@@ -155,88 +161,6 @@ export default function Home() {
 
   const HERO_BADGES = ["hero.badge_cnic", "hero.badge_urdu", "hero.badge_free", "hero.badge_48hr"];
 
-  // Shared worker card renderer
-  const renderWorkerCard = (worker) => {
-    const name           = worker.userId?.fullName || "Worker";
-    const workerInitials = name.split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
-    const city           = worker.preferredCity || "Pakistan";
-    const badge          = worker.availabilityBadge || "Available";
-    const rating         = worker.averageRating ? worker.averageRating.toFixed(1) : null;
-    const jobs           = worker.totalCompletedJobs || 0;
-    const serviceNames   = (worker.services || []).map(s => s?.name || s).filter(Boolean).slice(0, 2);
-    const employmentType = worker.employmentType || "";
-    const badgeLabel     = badge === "Available" ? t("workers.available") : t("workers.busy");
-
-    const handleHire = () => {
-      if (!user) navigate("/login");
-      else if (user.role === "employer") navigate("/employer/workers");
-      else navigate("/login");
-    };
-
-    return (
-      <div key={worker._id} className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md transition-all flex flex-col gap-3">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-sm shrink-0">
-            {workerInitials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-black text-sm text-[#0F172A] truncate">{name}</div>
-            <div className="flex items-center gap-1 text-xs text-slate-400">
-              <MapPin size={11} /> {city}
-            </div>
-          </div>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-            badge === "Available" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"
-          }`}>
-            {badgeLabel}
-          </span>
-        </div>
-
-        {/* Services */}
-        {serviceNames.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {serviceNames.map((s, i) => {
-              const SvcIcon = SERVICE_ICONS[s] || DEFAULT_SERVICE_ICON;
-              return (
-                <span key={i} className="flex items-center gap-1 text-[11px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
-                  <SvcIcon size={11} /> {s}
-                </span>
-              );
-            })}
-            {employmentType && (
-              <span className="text-[11px] font-semibold bg-teal-50 text-teal-600 px-2.5 py-0.5 rounded-full">
-                {employmentType}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          {rating && (
-            <span className="flex items-center gap-1">
-              <Star size={12} className="text-yellow-400 fill-yellow-400" />
-              <span className="font-bold text-slate-600">{rating}</span>
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Briefcase size={11} />
-            {jobs} {t("workers.jobs_done")}
-          </span>
-        </div>
-
-        {/* Hire Button */}
-        <button
-          onClick={handleHire}
-          className="mt-auto w-full bg-[#0F172A] hover:bg-teal-600 text-white text-sm font-bold py-2.5 rounded-xl border-none cursor-pointer transition-colors"
-        >
-          {user?.role === "employer" ? t("workers.hire_btn") : t("workers.hire")}
-        </button>
-      </div>
-    );
-  };
-
   return (
     <div className="font-sans text-[#0F172A] bg-white pt-20">
 
@@ -252,7 +176,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-start gap-2 mb-5">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.05]">
+              <h1 className="text-5xl lg:text-6xl font-black leading-[1.05]">
                 {t("hero.title_line1")}<br />
                 <span className="text-teal-500">{t("hero.title_line2")}</span>
               </h1>
@@ -264,7 +188,7 @@ export default function Home() {
 
             <p className="text-slate-500 text-base leading-relaxed max-w-md mb-8">{t("hero.subtitle")}</p>
 
-            <div className={`flex flex-wrap gap-3 mb-8 ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>
+            <div className={`flex gap-3 mb-8 ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>
               <button
                 onClick={() => navigate("/login")}
                 className="bg-[#0F172A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-slate-800 transition-all cursor-pointer border-none"
@@ -328,7 +252,7 @@ export default function Home() {
           </div>
           <p className="text-slate-500 text-base max-w-xl mx-auto mb-14">{t("why.subtitle")}</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-left">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5 text-left">
             {WHY_FEATURES.map(({ Icon, titleKey, descKey }) => (
               <div key={titleKey} className="bg-slate-50 rounded-2xl p-5 hover:shadow-md transition-shadow relative group">
                 <div className="absolute top-4 right-4">
@@ -368,7 +292,7 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {STEPS.map(({ Icon, num, titleKey, descKey }) => (
               <div key={num} className="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100 relative">
                 <div className="absolute top-2 right-2">
@@ -404,7 +328,7 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {services.map(({ name, _id }) => {
               const keys          = SERVICE_TRANS_KEYS[name] || SERVICE_TRANS_KEYS[_id];
               const displayName   = keys ? t(keys.name) : name;
@@ -441,7 +365,7 @@ export default function Home() {
 
           {workersLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-              {[1, 2, 3, 4, 5, 6].map(i => (
+              {[1,2,3,4,5,6].map(i => (
                 <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 animate-pulse">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-slate-200" />
@@ -468,7 +392,86 @@ export default function Home() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                {(showAllWorkers ? workers : workers.slice(0, 3)).map(renderWorkerCard)}
+                {(showAllWorkers ? workers : workers.slice(0, 3)).map((worker) => {
+                  const name           = worker.userId?.fullName || "Worker";
+                  const workerInitials = name.split(" ").slice(0,2).map(p => p[0]).join("").toUpperCase();
+                  const city           = worker.preferredCity || "Pakistan";
+                  const badge          = worker.availabilityBadge || "Available";
+                  const rating         = worker.averageRating ? worker.averageRating.toFixed(1) : null;
+                  const jobs           = worker.totalCompletedJobs || 0;
+                  const serviceNames   = (worker.services || []).map(s => s?.name || s).filter(Boolean).slice(0,2);
+                  const employmentType = worker.employmentType || "";
+                  const badgeLabel     = badge === "Available" ? t("workers.available") : t("workers.busy");
+
+                  const handleHire = () => {
+                    if (!user) navigate("/login");
+                    else if (user.role === "employer") navigate("/employer/workers");
+                    else navigate("/login");
+                  };
+
+                  return (
+                    <div key={worker._id} className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-md transition-all flex flex-col gap-3">
+                      {/* Header */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-sm shrink-0">
+                          {workerInitials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-black text-sm text-[#0F172A] truncate">{name}</div>
+                          <div className="flex items-center gap-1 text-xs text-slate-400">
+                            <MapPin size={11} /> {city}
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          badge === "Available" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"
+                        }`}>
+                          {badgeLabel}
+                        </span>
+                      </div>
+
+                      {/* Services */}
+                      {serviceNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {serviceNames.map((s, i) => {
+                            const SvcIcon = SERVICE_ICONS[s] || DEFAULT_SERVICE_ICON;
+                            return (
+                              <span key={i} className="flex items-center gap-1 text-[11px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
+                                <SvcIcon size={11} /> {s}
+                              </span>
+                            );
+                          })}
+                          {employmentType && (
+                            <span className="text-[11px] font-semibold bg-teal-50 text-teal-600 px-2.5 py-0.5 rounded-full">
+                              {employmentType}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-3 text-xs text-slate-400">
+                        {rating && (
+                          <span className="flex items-center gap-1">
+                            <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                            <span className="font-bold text-slate-600">{rating}</span>
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Briefcase size={11} />
+                          {jobs} {t("workers.jobs_done")}
+                        </span>
+                      </div>
+
+                      {/* Hire Button */}
+                      <button
+                        onClick={handleHire}
+                        className="mt-auto w-full bg-[#0F172A] hover:bg-teal-600 text-white text-sm font-bold py-2.5 rounded-xl border-none cursor-pointer transition-colors"
+                      >
+                        {user?.role === "employer" ? t("workers.hire_btn") : t("workers.hire")}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {workers.length > 3 && (
@@ -496,25 +499,71 @@ export default function Home() {
             <SpeakerButton text={`${t("reviews.title")}. ${t("reviews.rating_summary")}`} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {REVIEW_KEYS.map(({ name, roleKey, textKey, stars }) => (
-              <div key={name} className="bg-white rounded-2xl p-6 text-left shadow-sm border border-slate-100 relative">
-                <div className="absolute top-6 right-6">
-                  <SpeakerButton text={`${t(textKey)}. Reviewed by ${name}, ${t(roleKey)}`} />
+          {reviewsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-6 border border-slate-100 animate-pulse">
+                  <div className="flex gap-1 mb-3">
+                    {[1,2,3,4,5].map(j => (
+                      <div key={j} className="w-3 h-3 rounded bg-slate-200" />
+                    ))}
+                  </div>
+                  <div className="space-y-2 mb-5">
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                    <div className="h-3 bg-slate-200 rounded w-5/6" />
+                    <div className="h-3 bg-slate-200 rounded w-4/6" />
+                  </div>
+                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-slate-200 shrink-0" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3 bg-slate-200 rounded w-1/2" />
+                      <div className="h-2 bg-slate-100 rounded w-1/3" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-0.5 mb-3">
-                  {Array(stars).fill(null).map((_, i) => (
-                    <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-slate-600 text-sm leading-relaxed mb-4 italic">"{t(textKey)}"</p>
-                <div>
-                  <div className="font-black text-sm text-[#0F172A]">{name}</div>
-                  <div className="text-xs text-slate-400 font-semibold">{t(roleKey)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <Star size={40} className="mx-auto mb-3 text-slate-200" />
+              <p className="font-semibold text-sm">
+                {t("reviews.no_reviews") || "No 5-star reviews yet. Be the first to hire and review a worker!"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {reviews.slice(0, 6).map((review, idx) => {
+                const initials = (review.employerName || "E")
+                  .split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
+                return (
+                  <div key={idx} className="bg-white rounded-2xl p-6 text-left shadow-sm border border-slate-100 relative">
+                    <div className="absolute top-6 right-6">
+                      <SpeakerButton
+                        text={`${review.feedback}. Reviewed by ${review.employerName}, Employer`}
+                      />
+                    </div>
+                    <div className="flex gap-0.5 mb-3">
+                      {[1,2,3,4,5].map(i => (
+                        <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-slate-600 text-sm leading-relaxed mb-5 italic">
+                      "{review.feedback}"
+                    </p>
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
+                      <div className="w-9 h-9 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-xs shrink-0">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="font-black text-sm text-[#0F172A]">{review.employerName}</div>
+                        <div className="text-xs text-slate-400 font-semibold">Employer</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
