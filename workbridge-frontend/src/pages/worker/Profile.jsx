@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
+import {
+  MapPin, User, Briefcase, DollarSign, ShieldCheck,
+  Star, CheckCircle, Clock, XCircle, Edit2, Plus
+} from "lucide-react";
 
 function Field({ label, value, half = false }) {
   return (
@@ -68,7 +72,6 @@ export default function WorkerProfile() {
   const [saving,         setSaving]         = useState(false);
   const [savingPricing,  setSavingPricing]  = useState(false);
   const [toast,          setToast]          = useState(null);
-  // ✅ Live completed jobs count
   const [completedCount, setCompletedCount] = useState(0);
 
   const showToast = (msg, type = "success") => {
@@ -95,7 +98,6 @@ export default function WorkerProfile() {
       });
     }).catch(() => {});
 
-    // ✅ Fetch actual jobs and count completed ones
     api.get("/jobs").then(jobs => {
       setCompletedCount(Array.isArray(jobs) ? jobs.filter(j => j.status === "Completed").length : 0);
     }).catch(() => setCompletedCount(0));
@@ -184,7 +186,9 @@ export default function WorkerProfile() {
           </div>
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-xl font-black text-slate-800">{profile.userId?.fullName}</h2>
-            <p className="text-sm text-slate-500 mt-0.5">📍 {profile.preferredCity}</p>
+            <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1 justify-center sm:justify-start">
+              <MapPin size={13} className="text-slate-400" /> {profile.preferredCity}
+            </p>
             <div className="flex items-center gap-2 justify-center sm:justify-start mt-2 flex-wrap">
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor}`}>
                 {profile.availabilityBadge === "Available" ? "● AVAILABLE" : "● BUSY"}
@@ -193,18 +197,19 @@ export default function WorkerProfile() {
                 {profile.status}
               </span>
               {profile.status === "Active" && (
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-700">
-                  ✓ CNIC Verified
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-700 flex items-center gap-1">
+                  <CheckCircle size={11} /> CNIC Verified
                 </span>
               )}
             </div>
             <div className="flex gap-6 mt-3 justify-center sm:justify-start">
               <div className="text-center">
-                <p className="text-lg font-black text-slate-800">⭐ {profile.averageRating?.toFixed(1) || "0.0"}</p>
+                <p className="text-lg font-black text-slate-800 flex items-center gap-1 justify-center">
+                  <Star size={15} className="text-yellow-400 fill-yellow-400" /> {profile.averageRating?.toFixed(1) || "0.0"}
+                </p>
                 <p className="text-[11px] text-slate-400">Rating</p>
               </div>
               <div className="text-center">
-                {/* ✅ Now uses live count from /jobs */}
                 <p className="text-lg font-black text-slate-800">{completedCount}</p>
                 <p className="text-[11px] text-slate-400">Jobs Done</p>
               </div>
@@ -225,8 +230,8 @@ export default function WorkerProfile() {
                 </button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50">
-                ✏️ Edit Profile
+              <button onClick={() => setEditing(true)} className="border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2">
+                <Edit2 size={14} /> Edit Profile
               </button>
             )}
           </div>
@@ -236,7 +241,7 @@ export default function WorkerProfile() {
       {/* Personal Information */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          👤 Personal Information
+          <User size={13} /> Personal Information
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {editing ? (
@@ -262,7 +267,7 @@ export default function WorkerProfile() {
       {/* Work Info */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-5">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          🗂 Work Information
+          <Briefcase size={13} /> Work Information
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Employment Type" value={profile.employmentType}                                    half />
@@ -278,7 +283,7 @@ export default function WorkerProfile() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              💰 Service Pricing
+              <DollarSign size={13} /> Service Pricing
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
               Set your rates so employers see the estimated cost before hiring you.
@@ -287,9 +292,9 @@ export default function WorkerProfile() {
           {!editingPricing ? (
             <button
               onClick={() => setEditingPricing(true)}
-              className="border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50 shrink-0"
+              className="border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50 shrink-0 flex items-center gap-2"
             >
-              {hasPricing ? "✏️ Edit Rates" : "➕ Set Rates"}
+              {hasPricing ? <><Edit2 size={14} /> Edit Rates</> : <><Plus size={14} /> Set Rates</>}
             </button>
           ) : (
             <div className="flex gap-2 shrink-0 flex-wrap">
@@ -317,8 +322,9 @@ export default function WorkerProfile() {
             <PricingField label="Weekly Rate  (PKR / wk)"  name="weeklyRate"  value={pricing.weeklyRate}  onChange={handlePricingChange} />
             <PricingField label="Monthly Rate (PKR / mo)"  name="monthlyRate" value={pricing.monthlyRate} onChange={handlePricingChange} />
             <div className="col-span-2">
-              <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-2">
-                💡 Leave a field blank if you don't offer that hiring type. Employers will only see rates you've set.
+              <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-2 flex items-center gap-2">
+                <DollarSign size={12} className="text-slate-400 shrink-0" />
+                Leave a field blank if you don't offer that hiring type. Employers will only see rates you've set.
               </p>
             </div>
           </div>
@@ -349,7 +355,7 @@ export default function WorkerProfile() {
               </div>
             ) : (
               <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-2xl mb-2">💰</p>
+                <DollarSign size={28} className="mx-auto text-slate-300 mb-2" />
                 <p className="text-sm font-semibold text-slate-500">No rates set yet</p>
                 <p className="text-xs text-slate-400 mt-1">
                   Click "Set Rates" to add your pricing. Employers won't see a cost estimate until you do.
@@ -363,15 +369,17 @@ export default function WorkerProfile() {
       {/* Verification Status */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          🔐 Verification Status
+          <ShieldCheck size={13} /> Verification Status
         </h3>
         <div className={`flex items-center gap-4 p-4 rounded-2xl ${
           profile.status === "Active" ? "bg-green-50 border border-green-200" : "bg-yellow-50 border border-yellow-200"
         }`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
             profile.status === "Active" ? "bg-green-100" : "bg-yellow-100"
           }`}>
-            {profile.status === "Active" ? "✅" : "⏳"}
+            {profile.status === "Active"
+              ? <CheckCircle size={22} className="text-green-600" />
+              : <Clock size={22} className="text-yellow-600" />}
           </div>
           <div>
             <p className={`text-sm font-bold ${profile.status === "Active" ? "text-green-700" : "text-yellow-700"}`}>
@@ -385,8 +393,9 @@ export default function WorkerProfile() {
           </div>
         </div>
         {profile.adminRejectionReason && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
-            <strong>Rejection Reason:</strong> {profile.adminRejectionReason}
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+            <XCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+            <span><strong>Rejection Reason:</strong> {profile.adminRejectionReason}</span>
           </div>
         )}
       </div>

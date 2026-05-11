@@ -175,8 +175,8 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden fixed inset-x-0 bottom-0 top-[56px]">
-  <div className="w-16 sm:w-64 shrink-0 bg-white border-r border-slate-100 flex flex-col">
+<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden fixed bottom-0 top-[56px] left-0 right-0 md:left-[230px]">
+   <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
             <MessageSquare size={14} className="text-teal-500" />
@@ -221,19 +221,19 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                 </div>
-                <div className="flex-1 min-w-0 hidden sm:block">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className={`text-xs font-bold truncate ${isActive ? "text-teal-700" : "text-slate-700"}`}>
                     {ename}
                   </p>
                   <p className="text-[10px] text-slate-400 truncate">
                     {j.hiringType} · {j.serviceId?.name || "Service"}
                   </p>
+                  {lastMsg && (
+                    <span className="text-[10px] text-slate-400">
+                      {fmtTime(lastMsg.sentAt)}
+                    </span>
+                  )}
                 </div>
-                {lastMsg && (
-                  <span className="text-[10px] text-slate-400 shrink-0">
-                    {fmtTime(lastMsg.sentAt)}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -248,7 +248,9 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
           <p className="text-sm mt-1">Choose a chat from the left to get started</p>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="w-full md:flex-1 flex flex-col min-h-0 overflow-hidden min-w-0">
+          
+
 
           {/* Header */}
           <div className="bg-white border-b border-slate-100 px-5 py-3 flex items-center gap-3 shrink-0">
@@ -259,12 +261,14 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
               <p className="font-black text-slate-800 text-sm">{employerName}</p>
               <p className="text-[10px] text-emerald-500 font-bold">● ONLINE</p>
             </div>
-            <button
-              onClick={() => navigate("/worker/dashboard")}
-              className="ml-auto text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all"
-            >
-              <ArrowLeft size={12} /> BACK
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => setActiveJob(null)}
+                className="md:hidden text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all"
+              >
+                <ArrowLeft size={12} /> CHATS
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -287,7 +291,7 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
                     </div>
                   )}
                   <div
-                    className={`max-w-[70vw] sm:max-w-xs lg:max-w-sm px-4 py-2.5 rounded-2xl text-sm leading-relaxed
+                    className={`max-w-[65vw] sm:max-w-xs lg:max-w-sm px-3 py-2 rounded-2xl text-sm leading-relaxed break-words
                       ${isMine
                         ? "bg-[#0F172A] text-white rounded-br-sm"
                         : "bg-white shadow-sm text-slate-800 border border-slate-100 rounded-bl-sm"
@@ -299,7 +303,7 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
                         ) : (
                         m.text
                         )}
-                    <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
+                    <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1 whitespace-nowrap">
                       {fmtTime(m.sentAt)}
                       {isMine && (
                         m.isRead
@@ -315,7 +319,7 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
           </div>
 
           {/* ── Input Bar ── */}
-          <div className="bg-white border-t border-slate-100 px-3 sm:px-5 py-3 flex flex-col gap-2 shrink-0">
+          <div className="bg-white border-t border-slate-100 px-3 py-3 flex flex-col gap-2 shrink-0 w-full overflow-hidden">
 
             {/* ✅ FIX 6: audio preview strip shown after recording stops */}
             {audioURL && !recording && (
@@ -334,9 +338,9 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
               </div>
             )}
 
-            <div className="flex gap-2 sm:gap-3">
-  <input
-    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
+        <div className="flex gap-2 items-center">
+          <input
+            className="flex-1 w-0 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
                 placeholder={recording ? "Recording…" : "Type your message here..."}
                 maxLength={500}
                 value={text}

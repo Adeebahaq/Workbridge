@@ -79,7 +79,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 inset-x-0 z-50 transition-all border-b ${
+      className={`fixed top-0 inset-x-0 z-[60] transition-all border-b ${
         pathname.startsWith("/admin")
           ? "bg-white shadow-sm py-3"
           : scrolled
