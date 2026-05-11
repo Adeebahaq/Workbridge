@@ -39,14 +39,14 @@ export default function OverviewTab({ metrics, pending, dataLoading, jobData, on
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-800">Admin Dashboard</h1>
           <p className="text-sm text-slate-400">Platform overview and key metrics</p>
         </div>
         <button
           onClick={onCreateWorker}
-          className="flex items-center gap-2 bg-[#0F172A]hover:bg-slate-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-all w-full justify-center text-xs sm:text-sm"
+          className="flex items-center gap-2 bg-[#0F172A] hover:bg-slate-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all w-full sm:w-auto justify-center"
         >
           <Plus size={15} /> Create Worker Account
         </button>

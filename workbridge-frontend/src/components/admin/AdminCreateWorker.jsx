@@ -47,6 +47,29 @@ const SERVICE_ICON_MAP = {
   "Elderly Care":     HeartHandshake,
 };
 
+// ── Formatters (from WorkerRegister) ─────────────────────────────────────────
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 4) return digits;
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
+const formatCnic = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  if (digits.length <= 5)  return digits;
+  if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+};
+
+const blockNonAlpha = (e) => {
+  if (
+    !/^[a-zA-Z\s]$/.test(e.key) &&
+    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+};
+
 function ServiceIcon({ name, active }) {
   const Icon = SERVICE_ICON_MAP[name] || Wrench;
   return <Icon size={18} strokeWidth={1.8} className={active ? "text-teal-600" : "text-slate-400"} />;
@@ -61,6 +84,12 @@ function SectionTitle({ children }) {
 }
 
 export default function AdminCreateWorker({ onClose, onSuccess }) {
+  const today  = new Date();
+  const maxDob = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    .toISOString().split("T")[0];
+  const minDob = new Date(today.getFullYear() - 60, today.getMonth(), today.getDate())
+    .toISOString().split("T")[0];
+
   const [form, setForm] = useState({
     fullName: "", phone: "", password: "", confirmPassword: "",
     cnicNumber: "", currentAddress: "", fatherSpouseName: "",
@@ -70,6 +99,7 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
     services: [], daysAvailable: [], preferredWorkingHours: [],
   });
 
+  const [fieldErrors, setFieldErrors] = useState({});
   const [cnicFront, setCnicFront]     = useState(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
@@ -84,37 +114,126 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
       .catch(() => {});
   }, []);
 
+  // ── Field setter with inline validation (from WorkerRegister) ────────────
+  const setField = (k, v) => {
+    if (k === "fullName")         v = v.replace(/[^a-zA-Z\s]/g, "").slice(0, 60);
+    if (k === "fatherSpouseName") v = v.replace(/[^a-zA-Z\s]/g, "").slice(0, 60);
+
+    if (k === "phone") {
+      v = formatPhone(v);
+      const digits = v.replace(/\D/g, "");
+      if (digits.length >= 2 && !digits.startsWith("03"))
+        setFieldErrors(e => ({ ...e, phone: "Phone must start with 03." }));
+      else
+        setFieldErrors(e => ({ ...e, phone: undefined }));
+    }
+
+    if (k === "cnicNumber") {
+      v = formatCnic(v);
+      const digits = v.replace(/\D/g, "");
+      if (digits.length >= 5 && !digits.startsWith("35202"))
+        setFieldErrors(e => ({ ...e, cnicNumber: "CNIC must start with 35202." }));
+      else
+        setFieldErrors(e => ({ ...e, cnicNumber: undefined }));
+    }
+
+    if (k === "password") {
+      if (v.length > 0 && v.length < 8)
+        setFieldErrors(e => ({ ...e, password: "Password must be at least 8 characters." }));
+      else if (v.length >= 8 && !/[!@#$%^&*(),.?":{}|<>]/.test(v))
+        setFieldErrors(e => ({ ...e, password: 'Must contain at least one special character (!@#$%^&*).' }));
+      else
+        setFieldErrors(e => ({ ...e, password: undefined }));
+    }
+
+    if (k === "confirmPassword") {
+      setForm(f => {
+        if (v !== f.password)
+          setFieldErrors(e => ({ ...e, confirmPassword: "Passwords do not match." }));
+        else
+          setFieldErrors(e => ({ ...e, confirmPassword: undefined }));
+        return f;
+      });
+    }
+
+    if (!["phone", "cnicNumber", "password", "confirmPassword"].includes(k))
+      setFieldErrors(e => ({ ...e, [k]: undefined }));
+
+    setForm(f => ({ ...f, [k]: v }));
+  };
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
   const toggleArr = (key, val) =>
     setForm(f => ({
       ...f,
       [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val],
     }));
 
+  // ── Full validation on submit (from WorkerRegister) ───────────────────────
   const validate = () => {
-    if (!form.fullName.trim())         return "Full name is required.";
-    if (!form.fatherSpouseName.trim()) return "Father/Spouse name is required.";
-    if (!form.dateOfBirth)             return "Date of birth is required.";
-    if (!form.cnicNumber.trim())       return "CNIC number is required.";
-    if (!/^[0-9]{5}-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber))
-                                       return "CNIC format must be: 35202-XXXXXXX-X";
-    if (!form.phone.trim())            return "Phone number is required.";
-    if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone))
-                                       return "Phone format must be: 03XX-XXXXXXX";
-    if (!form.currentAddress.trim())   return "Address is required.";
-    if (!form.password)                return "Password is required.";
-    if (form.password.length < 8)      return "Password must be at least 8 characters.";
-    if (form.password !== form.confirmPassword) return "Passwords do not match.";
-    if (form.services.length === 0)    return "Select at least one service.";
-    if (form.daysAvailable.length === 0) return "Select at least one available day.";
-    if (!cnicFront)                    return "CNIC front image is required.";
-    return null;
+    const errs = {};
+
+    if (!form.fullName.trim())
+      errs.fullName = "Full name is required.";
+    else if (form.fullName.trim().length < 3)
+      errs.fullName = "Name must be at least 3 characters.";
+
+    if (!form.fatherSpouseName.trim())
+      errs.fatherSpouseName = "Father/Spouse name is required.";
+    else if (form.fatherSpouseName.trim().length < 3)
+      errs.fatherSpouseName = "Name must be at least 3 characters.";
+
+    if (!form.dateOfBirth)
+      errs.dateOfBirth = "Date of birth is required.";
+    else if (form.dateOfBirth > maxDob)
+      errs.dateOfBirth = "Worker must be at least 18 years old.";
+    else if (form.dateOfBirth < minDob)
+      errs.dateOfBirth = "Age must not exceed 60 years.";
+
+    if (!form.cnicNumber.trim())
+      errs.cnicNumber = "CNIC number is required.";
+    else if (!/^35202-[0-9]{7}-[0-9]{1}$/.test(form.cnicNumber.trim()))
+      errs.cnicNumber = "CNIC format must be: 35202-XXXXXXX-X";
+
+    if (!form.phone.trim())
+      errs.phone = "Phone number is required.";
+    else if (!/^03[0-9]{2}-[0-9]{7}$/.test(form.phone.trim()))
+      errs.phone = "Phone format must be: 03XX-XXXXXXX";
+
+    if (!form.currentAddress.trim())
+      errs.currentAddress = "Address is required.";
+    else if (!/[a-zA-Z]/.test(form.currentAddress))
+      errs.currentAddress = "Address must contain letters, not just numbers.";
+
+    if (!form.password || form.password.length < 8)
+      errs.password = "Password must be at least 8 characters.";
+    else if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password))
+      errs.password = "Password must contain at least one special character (!@#$%^&*).";
+
+    if (form.password !== form.confirmPassword)
+      errs.confirmPassword = "Passwords do not match.";
+
+    if (form.services.length === 0)
+      errs.services = "Select at least one service.";
+
+    if (form.daysAvailable.length === 0)
+      errs.daysAvailable = "Select at least one available day.";
+
+    if (!cnicFront)
+      errs.cnicFront = "CNIC front image is required.";
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError("Please fix the errors below before submitting.");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validate();
-    if (validationError) { setError(validationError); return; }
+    if (!validate()) return;
     setError("");
     setLoading(true);
 
@@ -140,7 +259,14 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
     }
   };
 
-  const inp = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 bg-white transition-all";
+  // ── Dynamic input class (turns red on field error) ────────────────────────
+  const inp = (key) =>
+    `w-full border rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all bg-white ${
+      fieldErrors[key]
+        ? "border-red-400 focus:ring-red-300 bg-red-50"
+        : "border-slate-200 focus:border-teal-500 focus:ring-teal-500/20"
+    }`;
+
   const sel = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 bg-white transition-all";
 
   return (
@@ -185,25 +311,59 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
             {/* ── Personal Information ── */}
             <div>
               <SectionTitle>Personal Information</SectionTitle>
-              {/* 1 col on mobile, 2 col on sm+ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
                 <div className="sm:col-span-2">
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Full Name *</label>
-                  <input className={inp} placeholder="Full name" value={form.fullName}
-                    onChange={e => set("fullName", e.target.value)} />
+                  <input
+                    className={inp("fullName")}
+                    placeholder="Full name"
+                    value={form.fullName}
+                    onKeyDown={blockNonAlpha}
+                    onChange={e => setField("fullName", e.target.value)}
+                  />
+                  {fieldErrors.fullName
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.fullName}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Letters only</p>}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Father/Spouse Name *</label>
-                  <input className={inp} placeholder="Father or Spouse name" value={form.fatherSpouseName}
-                    onChange={e => set("fatherSpouseName", e.target.value)} />
+                  <input
+                    className={inp("fatherSpouseName")}
+                    placeholder="Father or Spouse name"
+                    value={form.fatherSpouseName}
+                    onKeyDown={blockNonAlpha}
+                    onChange={e => setField("fatherSpouseName", e.target.value)}
+                  />
+                  {fieldErrors.fatherSpouseName
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.fatherSpouseName}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Letters only</p>}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Date of Birth *</label>
-                  <input className={inp} type="date" value={form.dateOfBirth}
-                    onChange={e => set("dateOfBirth", e.target.value)} />
+                  <input
+                    className={inp("dateOfBirth")}
+                    type="date"
+                    min={minDob}
+                    max={maxDob}
+                    value={form.dateOfBirth}
+                    onKeyDown={e => {
+                      if (!["Tab","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Delete","Backspace"].includes(e.key))
+                        e.preventDefault();
+                    }}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (!val) { setField("dateOfBirth", ""); return; }
+                      const year = parseInt(val.split("-")[0], 10);
+                      if (year > today.getFullYear()) return;
+                      setField("dateOfBirth", val);
+                    }}
+                  />
+                  {fieldErrors.dateOfBirth
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.dateOfBirth}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Worker must be 18–60 years old</p>}
                 </div>
 
                 <div>
@@ -222,32 +382,78 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">CNIC * (35202-XXXXXXX-X)</label>
-                  <input className={inp} placeholder="35202-XXXXXXX-X" value={form.cnicNumber}
-                    onChange={e => set("cnicNumber", e.target.value)} />
+                  <input
+                    className={inp("cnicNumber")}
+                    placeholder="35202-XXXXXXX-X"
+                    maxLength={15}
+                    value={form.cnicNumber}
+                    onChange={e => setField("cnicNumber", e.target.value)}
+                  />
+                  {fieldErrors.cnicNumber
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.cnicNumber}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Must start with 35202</p>}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Phone * (03XX-XXXXXXX)</label>
-                  <input className={inp} placeholder="03XX-XXXXXXX" value={form.phone}
-                    onChange={e => set("phone", e.target.value)} />
+                  <input
+                    className={inp("phone")}
+                    placeholder="03XX-XXXXXXX"
+                    maxLength={12}
+                    value={form.phone}
+                    onChange={e => setField("phone", e.target.value)}
+                  />
+                  {fieldErrors.phone
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Must start with 03</p>}
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Current Address *</label>
-                  <input className={inp} placeholder="Full address" value={form.currentAddress}
-                    onChange={e => set("currentAddress", e.target.value)} />
+                  <input
+                    className={inp("currentAddress")}
+                    placeholder="e.g. House 5, Street 3, Lahore"
+                    value={form.currentAddress}
+                    onKeyDown={e => {
+                      if (["+","=","*","#","@","!","$","%","^","&","(",")",`_`].includes(e.key))
+                        e.preventDefault();
+                    }}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.length > 0 && !/[a-zA-Z]/.test(val)) return;
+                      setField("currentAddress", val);
+                    }}
+                  />
+                  {fieldErrors.currentAddress
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.currentAddress}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Must contain letters</p>}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Password *</label>
-                  <input className={inp} type="password" placeholder="Min 8 characters" value={form.password}
-                    onChange={e => set("password", e.target.value)} />
+                  <input
+                    className={inp("password")}
+                    type="password"
+                    placeholder="Min 8 chars + special character"
+                    value={form.password}
+                    onChange={e => setField("password", e.target.value)}
+                  />
+                  {fieldErrors.password
+                    ? <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+                    : <p className="text-xs text-slate-400 mt-1">Min 8 chars with !@#$%^&*</p>}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Confirm Password *</label>
-                  <input className={inp} type="password" placeholder="Repeat password" value={form.confirmPassword}
-                    onChange={e => set("confirmPassword", e.target.value)} />
+                  <input
+                    className={inp("confirmPassword")}
+                    type="password"
+                    placeholder="Repeat password"
+                    value={form.confirmPassword}
+                    onChange={e => setField("confirmPassword", e.target.value)}
+                  />
+                  {fieldErrors.confirmPassword &&
+                    <p className="text-xs text-red-500 mt-1">{fieldErrors.confirmPassword}</p>}
                 </div>
               </div>
             </div>
@@ -255,7 +461,9 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
             {/* ── Services ── */}
             <div>
               <SectionTitle>Services (select at least 1) *</SectionTitle>
-              {/* 3 cols on mobile, 4 on sm+ */}
+              {fieldErrors.services && (
+                <p className="text-xs text-red-500 mb-2">{fieldErrors.services}</p>
+              )}
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {serviceList.map(s => {
                   const active = form.services.includes(s._id);
@@ -280,13 +488,14 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
             {/* ── Availability ── */}
             <div>
               <SectionTitle>Availability *</SectionTitle>
-              {/* Stack vertically on mobile, side-by-side on sm+ */}
               <div className="flex flex-col sm:grid sm:grid-cols-2 gap-5">
 
-                {/* Left column: days + hours */}
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-2 block">Available Days *</label>
+                    {fieldErrors.daysAvailable && (
+                      <p className="text-xs text-red-500 mb-1">{fieldErrors.daysAvailable}</p>
+                    )}
                     <div className="flex gap-1.5 flex-wrap">
                       {DAYS_SHORT.map((d, i) => {
                         const full = DAYS_FULL[i];
@@ -335,7 +544,6 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                   </div>
                 </div>
 
-                {/* Right column: city, employment, distance */}
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-1 block">Preferred City</label>
@@ -373,6 +581,9 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
             {/* ── CNIC Document ── */}
             <div>
               <SectionTitle>CNIC Document *</SectionTitle>
+              {fieldErrors.cnicFront && (
+                <p className="text-xs text-red-500 mb-2">{fieldErrors.cnicFront}</p>
+              )}
               <label className="block border-2 border-dashed border-slate-200 rounded-2xl p-5 sm:p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
                 <input type="file" accept="image/*" className="hidden"
                   onChange={e => setCnicFront(e.target.files[0])} />

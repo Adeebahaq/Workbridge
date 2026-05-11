@@ -162,11 +162,11 @@ export default function Home() {
   const HERO_BADGES = ["hero.badge_cnic", "hero.badge_urdu", "hero.badge_free", "hero.badge_48hr"];
 
   return (
-    <div className="font-sans text-[#0F172A] bg-white pt-20">
+    <div className="font-sans text-[#0F172A] bg-white pt-20 overflow-x-hidden">
 
       {/* ── HERO ── */}
-      <section className="bg-[#F8FAFC] pt-10 pb-16 px-6">
-        <div dir="ltr" className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+     <section className="bg-[#F8FAFC] pt-10 pb-16 px-4 overflow-hidden">
+       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div dir="auto" style={{ textAlign: i18n.language === "ur" ? "right" : "left" }}>
 
             <div className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-xs font-bold text-slate-500 tracking-widest uppercase mb-6">
@@ -176,7 +176,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-start gap-2 mb-5">
-              <h1 className="text-5xl lg:text-6xl font-black leading-[1.05]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05]">
                 {t("hero.title_line1")}<br />
                 <span className="text-teal-500">{t("hero.title_line2")}</span>
               </h1>
@@ -188,8 +188,7 @@ export default function Home() {
 
             <p className="text-slate-500 text-base leading-relaxed max-w-md mb-8">{t("hero.subtitle")}</p>
 
-            <div className={`flex gap-3 mb-8 ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>
-              <button
+            <div className={`flex flex-wrap gap-3 mb-8 ${i18n.language === "ur" ? "flex-row-reverse" : ""}`}>              <button
                 onClick={() => navigate("/login")}
                 className="bg-[#0F172A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-slate-800 transition-all cursor-pointer border-none"
               >
@@ -244,7 +243,7 @@ export default function Home() {
       </section>
 
       {/* ── WHY SECTION ── */}
-      <section className="py-20 px-6 bg-white" id="why">
+      <section className="py-20 px-4 sm:px-6 bg-white" id="why">
         <div className="max-w-5xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <h2 className="text-4xl font-black">{t("why.title")}</h2>
@@ -270,7 +269,7 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-20 px-6 bg-slate-50" id="how">
+      <section className="py-20 px-4 sm:px-6 bg-slate-50" id="how">
         <div className="max-w-5xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-10">
             <h2 className="text-4xl font-black">{t("how.title")}</h2>
@@ -313,7 +312,7 @@ export default function Home() {
       </section>
 
       {/* ── SERVICES ── */}
-      <section className="py-20 px-6 bg-white" id="services">
+      <section className="py-20 px-4 sm:px-6 bg-white" id="services">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-2">

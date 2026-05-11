@@ -79,7 +79,6 @@ export default function Navbar() {
 
   return (
     <nav
-      dir="ltr"
       className={`fixed top-0 inset-x-0 z-50 transition-all border-b ${
         pathname.startsWith("/admin")
           ? "bg-white shadow-sm py-3"
@@ -88,12 +87,15 @@ export default function Navbar() {
           : "bg-white/90 backdrop-blur-md py-4"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between" dir="ltr">
 
         {/* Logo */}
-        <Link to="/" onClick={closeMenu} className="flex items-center gap-2">
-          <img src={logo} alt="WorkBridge Logo" className="h-10 w-auto object-contain" />
-          <span className="font-black text-2xl">WorkBridge</span>
+        <Link to="/" onClick={closeMenu} className="flex items-center gap-2 min-w-0">
+          <img src={logo} alt="WorkBridge Logo" className="h-8 sm:h-10 w-auto object-contain shrink-0" />
+          <span className="font-black text-xl sm:text-2xl truncate">
+            <span className="text-[#0F172A]">Work</span>
+            <span className="text-teal-500">Bridge</span>
+          </span>
         </Link>
 
         {/* Desktop */}
@@ -176,11 +178,11 @@ export default function Navbar() {
         </div>
 
         {/* Mobile hamburger */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="md:hidden flex items-center gap-2 shrink-0 ms-auto">
           <LanguageSwitcher />
-          <button onClick={() => setNavOpen(!navOpen)}>
-            {navOpen ? <X /> : <Menu />}
-          </button>
+            <button onClick={() => setNavOpen(!navOpen)} className="w-8 h-8 flex items-center justify-center shrink-0">
+              {navOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
         </div>
       </div>
 
@@ -232,17 +234,16 @@ export default function Navbar() {
               ))}
 
               {isAuthPage && (
-                <button onClick={handleHome} className="text-left font-semibold flex items-center gap-2">
-                  <Home className="w-4 h-4" />
+                <button onClick={() => { handleHome(); closeMenu(); }} className="text-left font-semibold flex items-center gap-2">                <Home className="w-4 h-4" />
                   {t("nav.home")}
                 </button>
               )}
 
-              <Link to="/login">{t("nav.login")}</Link>
+              <Link to="/login" onClick={closeMenu}>{t("nav.login")}</Link>
 
-              <Link to="/register/employer">
-                {t("nav.get_started")}
-              </Link>
+            <Link to="/register/employer" onClick={closeMenu}>
+              {t("nav.get_started")}
+            </Link>
             </>
           )}
         </div>

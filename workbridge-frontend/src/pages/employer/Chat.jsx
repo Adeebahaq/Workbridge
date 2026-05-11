@@ -136,7 +136,7 @@ export default function Chat() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
-<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden">
+<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden fixed inset-x-0 bottom-0 top-[56px]">
   <div className="w-16 sm:w-64 shrink-0 bg-white border-r border-slate-100 flex flex-col">
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
@@ -193,7 +193,7 @@ export default function Chat() {
           <p className="text-sm mt-1">Choose a chat from the left to get started</p>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
           {/* Header */}
           <div className="bg-white border-b border-slate-100 px-5 py-3 flex items-center gap-3 shrink-0 sticky top-0 z-10">
@@ -213,7 +213,7 @@ export default function Chat() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <MessageSquare size={32} className="mb-2 opacity-30" />

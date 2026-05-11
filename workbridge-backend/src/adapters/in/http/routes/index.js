@@ -22,6 +22,7 @@ const workerRoutes   = require("./worker.routes")(workerCtrl);
 const employerRoutes = require("./employer.routes")(employerCtrl);
 const adminRoutes    = require("./admin.routes")(adminCtrl);
 const jobRoutes      = require("./job.routes")(jobCtrl);
+const ttsRouter = require("./tts");
 
 const router = Router();
 
@@ -58,5 +59,6 @@ router.use("/workers",   workerRoutes);
 router.use("/employers", employerRoutes);
 router.use("/admin",     adminRoutes);
 router.use("/jobs",      jobRoutes);
+router.use("/tts", ttsRouter);
 
 module.exports = router;

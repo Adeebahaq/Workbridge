@@ -25,7 +25,7 @@ export default function LanguageSwitcher({ className = "" }) {
       type="button"
       onClick={toggle}
       aria-label="Switch language"
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold transition-all duration-200
+      className={`flex items-center gap-1 px-2 py-1.5 rounded-xl border text-sm font-bold transition-all duration-200 whitespace-nowrap min-w-[90px] justify-center
         ${isUrdu
           ? "bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
           : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"

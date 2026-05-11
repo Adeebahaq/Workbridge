@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.1",
     "axios": "^1.4.0",
     "i18next": "^23.11.5",
     "i18next-browser-languagedetector": "^7.2.1",

@@ -6,7 +6,9 @@ const { errorMiddleware } = require("../../adapters/in/http/middlewares/error.mi
 function createApp() {
   const app = express();
 
-  app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", process.env.CLIENT_URL],
+}));
   app.use(express.json());
 
   // Serve uploaded files statically
