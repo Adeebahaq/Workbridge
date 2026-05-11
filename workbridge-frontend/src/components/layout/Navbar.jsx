@@ -4,6 +4,7 @@ import { ArrowRight, Menu, X, LogOut, Home, LayoutDashboard } from "lucide-react
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
+import logo from "../../assets/logow.png";
 
 export default function Navbar() {
   const [navOpen, setNavOpen] = useState(false);
@@ -91,9 +92,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" onClick={closeMenu} className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-[#7FFFD4] flex items-center justify-center font-bold text-2xl">
-            W
-          </div>
+          <img src={logo} alt="WorkBridge Logo" className="h-10 w-auto object-contain" />
           <span className="font-black text-2xl">WorkBridge</span>
         </Link>
 
