@@ -20,8 +20,7 @@ function groupByDay(notifications) {
 }
 
 export default function EmployerNotifications() {
-  const { notifications, unreadCount, loading, markOneRead, markAllRead } = useNotifications("employer");
-  const grouped = groupByDay(notifications);
+const { notifications, unreadCount, loading, markOneRead, markAllRead } = useNotifications();  const grouped = groupByDay(notifications);
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px" }}>

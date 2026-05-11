@@ -6,6 +6,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./components/layout/Navbar";
 import NotificationToast from "./components/common/NotificationToast";
+import { NotificationsProvider } from "./contexts/NotificationsContext"; // 👈 add this
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -26,13 +27,26 @@ function AuthGate({ children }) {
   return children;
 }
 
+// 👇 New wrapper that reads role and provides notifications context
+function NotificationsGate({ children }) {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  // Only wrap with provider if user is logged in and has a role
+  if (!role || role === "admin") return children;
+
+  return (
+    <NotificationsProvider role={role}>
+      {children}
+    </NotificationsProvider>
+  );
+}
+
 function AppShell() {
   return (
     <>
       <ScrollToTop />
-      {/* Navbar only shows on public/guest pages — hides itself inside /worker, /employer, /admin */}
       <Navbar />
-      {/* ✅ Global real-time toast — shows for both worker and employer */}
       <NotificationToast />
       <AppRoutes />
     </>
@@ -44,7 +58,9 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <AuthGate>
-          <AppShell />
+          <NotificationsGate>  {/* 👈 wraps AppShell so Sidebar is inside provider */}
+            <AppShell />
+          </NotificationsGate>
         </AuthGate>
       </AuthProvider>
     </BrowserRouter>

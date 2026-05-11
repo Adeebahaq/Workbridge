@@ -50,7 +50,7 @@ export default function Sidebar() {
   const { t }            = useTranslation();
 
   const role = user?.role || "worker";
-  const { unreadCount } = useNotifications(role);
+const { unreadCount = 0 } = useNotifications() ?? {};
 
   const ROLE_CONFIG = {
     worker: {

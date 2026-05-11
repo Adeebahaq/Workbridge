@@ -1,7 +1,7 @@
 const { Router }         = require("express");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const { roleMiddleware } = require("../middlewares/role.middleware");
-const { upload }            = require("../middlewares/upload.middleware");
+const { upload }         = require("../middlewares/upload.middleware");
 const WorkerProfile      = require("../../../out/persistence/mongoose/models/WorkerProfile.model");
 
 module.exports = function(controller) {
@@ -27,7 +27,6 @@ module.exports = function(controller) {
       const Rating = require("../../../out/persistence/mongoose/models/Rating.model");
       const User   = require("../../../out/persistence/mongoose/models/User.model");
 
-      // Only 5-star ratings that have feedback text
       const ratings = await Rating.find({ stars: 5, feedback: { $exists: true, $ne: "" } })
         .sort({ submittedAt: -1 })
         .limit(6)
@@ -37,7 +36,6 @@ module.exports = function(controller) {
       for (const r of ratings) {
         const employer = await User.findById(r.employerId).select("fullName").lean();
         if (!employer) continue;
-
         results.push({
           stars:        r.stars,
           feedback:     r.feedback,
@@ -110,7 +108,7 @@ module.exports = function(controller) {
     (req, res, next) => controller.getMyRatings(req, res, next)
   );
 
-  // Notifications
+  // Notifications — ⚠️ read-all MUST come before :notificationId/read
   router.get(
     "/notifications",
     authMiddleware, roleMiddleware("worker"),
@@ -118,15 +116,15 @@ module.exports = function(controller) {
   );
 
   router.patch(
-    "/notifications/:notificationId/read",
+    "/notifications/read-all",              // ✅ specific route first
     authMiddleware, roleMiddleware("worker"),
-    (req, res, next) => controller.markNotificationRead(req, res, next)
+    (req, res, next) => controller.markAllNotificationsRead(req, res, next)
   );
 
   router.patch(
-    "/notifications/read-all",
+    "/notifications/:notificationId/read",  // ✅ parameterized route second
     authMiddleware, roleMiddleware("worker"),
-    (req, res, next) => controller.markAllNotificationsRead(req, res, next)
+    (req, res, next) => controller.markNotificationRead(req, res, next)
   );
 
   return router;
