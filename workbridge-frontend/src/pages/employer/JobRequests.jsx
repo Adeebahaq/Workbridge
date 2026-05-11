@@ -18,7 +18,6 @@ const STATUS_META = {
   Expired:                 { color: "bg-orange-100 text-orange-700",  dot: "bg-orange-500",   label: "Expired"     },
 };
 
-// ── Rating Modal ────────────────────────────────────────────────────────────
 function RateModal({ job, onClose, onRate }) {
   const [rating,     setRating]     = useState(0);
   const [hover,      setHover]      = useState(0);
@@ -30,7 +29,6 @@ function RateModal({ job, onClose, onRate }) {
     if (!rating) { setError("Please select a star rating."); return; }
     setSubmitting(true); setError("");
     try {
-      // workerId is extracted inside onRate from the job object
       await onRate(job._id, job.workerId?._id || job.workerId, rating, feedback);
       onClose();
     } catch (e) {
@@ -44,7 +42,7 @@ function RateModal({ job, onClose, onRate }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 sm:p-6" onClick={e => e.stopPropagation()}>
         <div className="text-center mb-4">
           <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Star className="w-6 h-6 text-amber-500" />
@@ -53,7 +51,6 @@ function RateModal({ job, onClose, onRate }) {
           <p className="text-xs text-slate-400 mt-1">Your review helps others make better decisions.</p>
         </div>
 
-        {/* Stars */}
         <div className="flex gap-1 justify-center mb-4">
           {[1, 2, 3, 4, 5].map(i => (
             <button
@@ -73,7 +70,6 @@ function RateModal({ job, onClose, onRate }) {
           </p>
         )}
 
-        {/* Feedback */}
         <textarea
           value={feedback}
           onChange={e => setFeedback(e.target.value)}
@@ -140,7 +136,8 @@ export default function JobRequests() {
   };
 
   const handleRate = async (jobId, workerId, rating, feedback) => {
-    await api.post("/employers/ratings", { jobId, workerId, stars: rating, feedback });    await fetchJobs();
+    await api.post("/employers/ratings", { jobId, workerId, stars: rating, feedback });
+    await fetchJobs();
     showToast("⭐ Rating submitted successfully!");
   };
 
@@ -160,10 +157,10 @@ export default function JobRequests() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Toast */}
+    <div className="w-full max-w-4xl mx-auto px-0 sm:px-2">
+      {/* Toast — bottom on mobile, top-right on desktop */}
       {toast.show && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl text-white transition-all ${
+        <div className={`fixed bottom-4 left-4 right-4 sm:bottom-auto sm:top-5 sm:left-auto sm:right-5 sm:w-auto z-50 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl text-white text-center transition-all ${
           toast.type === "error" ? "bg-red-500" : toast.type === "info" ? "bg-slate-700" : "bg-teal-500"
         }`}>
           {toast.msg}
@@ -179,46 +176,48 @@ export default function JobRequests() {
       )}
 
       {/* Header */}
-      <div className="mb-5">
-        <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
+      <div className="mb-4 px-1">
+        <h1 className="text-lg sm:text-xl font-black text-slate-800 flex items-center gap-2">
           <Briefcase className="w-5 h-5 text-teal-500" />
           My Jobs
         </h1>
         <p className="text-sm text-slate-400 mt-0.5">Track all your job requests and their status</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white border border-slate-100 rounded-2xl p-1 mb-5 shadow-sm w-fit overflow-x-auto">
-        {TABS.map(t => {
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                tab === t.key ? "bg-[#0F172A] text-white" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {t.label}
-              {counts[t.key] > 0 && (
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                  tab === t.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                }`}>
-                  {counts[t.key]}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Tabs — scrollable on mobile */}
+      <div className="mb-4 px-1">
+        <div className="flex gap-1 bg-white border border-slate-100 rounded-2xl p-1 shadow-sm overflow-x-auto no-scrollbar w-full">
+          {TABS.map(t => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  tab === t.key ? "bg-[#0F172A] text-white" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {t.label}
+                {counts[t.key] > 0 && (
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                    tab === t.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  }`}>
+                    {counts[t.key]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Empty state */}
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-100">
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-100">
           <Briefcase className="w-10 h-10 mb-3 opacity-30" />
           <p className="font-semibold">No jobs here</p>
-          <p className="text-sm mt-1">
+          <p className="text-sm mt-1 text-center px-4">
             {tab === "all" ? "You haven't sent any job requests yet." : "No jobs in this category."}
           </p>
         </div>
@@ -238,26 +237,27 @@ export default function JobRequests() {
           const canCancel   = j.status === "Requested";
 
           return (
-            <div key={j._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-all">
+            <div key={j._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 hover:shadow-md transition-all">
               <div className="flex items-start gap-3">
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-sm shrink-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-500/15 flex items-center justify-center text-teal-600 font-black text-sm shrink-0">
                   {workerInit}
                 </div>
 
                 <div className="flex-1 min-w-0">
+                  {/* Top row: name + cost/status */}
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-black text-slate-800 text-sm">{workerName}</p>
-                      <p className="text-xs text-slate-400">
+                    <div className="min-w-0">
+                      <p className="font-black text-slate-800 text-sm truncate">{workerName}</p>
+                      <p className="text-xs text-slate-400 truncate">
                         {svcName} · {j.hiringType} · {fmtDate(j.jobDate)}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       {cost > 0 && (
-                        <p className="font-black text-slate-800 text-sm">PKR {cost.toLocaleString()}</p>
+                        <p className="font-black text-slate-800 text-sm whitespace-nowrap">PKR {cost.toLocaleString()}</p>
                       )}
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${meta.color}`}>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${meta.color}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                         {meta.label}
                       </span>
@@ -270,7 +270,6 @@ export default function JobRequests() {
                     </p>
                   )}
 
-                  {/* Rejection reason */}
                   {j.status === "Rejected" && j.rejectionReason && (
                     <p className="text-xs text-red-500 mt-1.5 bg-red-50 px-3 py-1.5 rounded-lg">
                       Reason: {j.rejectionReason}
@@ -279,7 +278,7 @@ export default function JobRequests() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons — wrap on mobile */}
               {(canCancel || canConfirm || canChat || canRate) && (
                 <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50 flex-wrap">
                   {canCancel && (

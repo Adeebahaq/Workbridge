@@ -6,7 +6,6 @@ import {
   X, Upload, CheckCircle, AlertCircle, Check,
 } from "lucide-react";
 
-// ─── ENUMS ───────────────────────────────────────────────────────────────────
 const DAYS_FULL  = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const CITIES     = ["Lahore","Karachi","Islamabad","Rawalpindi","Faisalabad","Multan","Peshawar","Quetta"];
@@ -33,7 +32,6 @@ const FALLBACK_SERVICES = [
   { _id: "elderly",   name: "Elderly Care" },
 ];
 
-// Lucide icon map keyed by service name
 const SERVICE_ICON_MAP = {
   "Domestic Helpers": Home,
   "Drivers":          Car,
@@ -51,7 +49,7 @@ const SERVICE_ICON_MAP = {
 
 function ServiceIcon({ name, active }) {
   const Icon = SERVICE_ICON_MAP[name] || Wrench;
-  return <Icon size={20} strokeWidth={1.8} className={active ? "text-teal-600" : "text-slate-400"} />;
+  return <Icon size={18} strokeWidth={1.8} className={active ? "text-teal-600" : "text-slate-400"} />;
 }
 
 function SectionTitle({ children }) {
@@ -122,16 +120,13 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
 
     try {
       const payload = new FormData();
-
       ["fullName","phone","password","confirmPassword","cnicNumber",
        "currentAddress","fatherSpouseName","dateOfBirth","gender",
        "maritalStatus","employmentType","preferredCity","maxTravelDistance",
       ].forEach(k => payload.append(k, form[k]));
-
       ["services","daysAvailable","preferredWorkingHours"].forEach(k => {
         form[k].forEach(item => payload.append(k, item));
       });
-
       payload.append("cnicFrontImage", cnicFront);
       payload.append("adminCreated", "true");
 
@@ -150,103 +145,125 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white w-full sm:rounded-2xl sm:max-w-2xl shadow-2xl flex flex-col"
+        style={{ maxHeight: "95vh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#0F172A] p-5 text-white shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black">Create Worker Account</h2>
-              <p className="text-slate-400 text-xs mt-0.5">
+        <div className="bg-[#0F172A] px-4 py-4 sm:p-5 text-white shrink-0 sm:rounded-t-2xl">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-black">Create Worker Account</h2>
+              <p className="text-slate-400 text-xs mt-0.5 leading-snug">
                 Account will be automatically verified — no admin review needed.
               </p>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all shrink-0"
             >
               <X size={16} />
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
-          <div className="p-6 space-y-6">
+        {/* Scrollable body */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 overscroll-contain">
+          <div className="p-4 sm:p-6 space-y-6">
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-                <AlertCircle size={16} className="shrink-0" />
-                {error}
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 flex items-start gap-2">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
-            {/* Personal Information */}
+            {/* ── Personal Information ── */}
             <div>
               <SectionTitle>Personal Information</SectionTitle>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
+              {/* 1 col on mobile, 2 col on sm+ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                <div className="sm:col-span-2">
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Full Name *</label>
-                  <input className={inp} placeholder="Full name" value={form.fullName} onChange={e => set("fullName", e.target.value)} />
+                  <input className={inp} placeholder="Full name" value={form.fullName}
+                    onChange={e => set("fullName", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Father/Spouse Name *</label>
-                  <input className={inp} placeholder="Father or Spouse name" value={form.fatherSpouseName} onChange={e => set("fatherSpouseName", e.target.value)} />
+                  <input className={inp} placeholder="Father or Spouse name" value={form.fatherSpouseName}
+                    onChange={e => set("fatherSpouseName", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Date of Birth *</label>
-                  <input className={inp} type="date" value={form.dateOfBirth} onChange={e => set("dateOfBirth", e.target.value)} />
+                  <input className={inp} type="date" value={form.dateOfBirth}
+                    onChange={e => set("dateOfBirth", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Gender *</label>
                   <select className={sel} value={form.gender} onChange={e => set("gender", e.target.value)}>
                     {["Male","Female","Other"].map(g => <option key={g}>{g}</option>)}
                   </select>
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Marital Status</label>
                   <select className={sel} value={form.maritalStatus} onChange={e => set("maritalStatus", e.target.value)}>
                     {["Single","Married","Divorced","Widowed"].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">CNIC * (35202-XXXXXXX-X)</label>
-                  <input className={inp} placeholder="35202-XXXXXXX-X" value={form.cnicNumber} onChange={e => set("cnicNumber", e.target.value)} />
+                  <input className={inp} placeholder="35202-XXXXXXX-X" value={form.cnicNumber}
+                    onChange={e => set("cnicNumber", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Phone * (03XX-XXXXXXX)</label>
-                  <input className={inp} placeholder="03XX-XXXXXXX" value={form.phone} onChange={e => set("phone", e.target.value)} />
+                  <input className={inp} placeholder="03XX-XXXXXXX" value={form.phone}
+                    onChange={e => set("phone", e.target.value)} />
                 </div>
-                <div className="col-span-2">
+
+                <div className="sm:col-span-2">
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Current Address *</label>
-                  <input className={inp} placeholder="Full address" value={form.currentAddress} onChange={e => set("currentAddress", e.target.value)} />
+                  <input className={inp} placeholder="Full address" value={form.currentAddress}
+                    onChange={e => set("currentAddress", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Password *</label>
-                  <input className={inp} type="password" placeholder="Min 8 characters" value={form.password} onChange={e => set("password", e.target.value)} />
+                  <input className={inp} type="password" placeholder="Min 8 characters" value={form.password}
+                    onChange={e => set("password", e.target.value)} />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Confirm Password *</label>
-                  <input className={inp} type="password" placeholder="Repeat password" value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} />
+                  <input className={inp} type="password" placeholder="Repeat password" value={form.confirmPassword}
+                    onChange={e => set("confirmPassword", e.target.value)} />
                 </div>
               </div>
             </div>
 
-            {/* Services */}
+            {/* ── Services ── */}
             <div>
               <SectionTitle>Services (select at least 1) *</SectionTitle>
-              <div className="grid grid-cols-4 gap-2">
+              {/* 3 cols on mobile, 4 on sm+ */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {serviceList.map(s => {
                   const active = form.services.includes(s._id);
                   return (
                     <button
                       key={s._id} type="button"
                       onClick={() => toggleArr("services", s._id)}
-                      className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border-2 text-xs font-bold text-center transition-all ${
+                      className={`flex flex-col items-center gap-1 px-1 py-2.5 sm:py-3 rounded-xl border-2 text-[10px] sm:text-xs font-bold text-center transition-all ${
                         active
                           ? "border-teal-500 bg-teal-50 text-teal-700"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
@@ -260,10 +277,13 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* Availability */}
+            {/* ── Availability ── */}
             <div>
               <SectionTitle>Availability *</SectionTitle>
-              <div className="grid grid-cols-2 gap-5">
+              {/* Stack vertically on mobile, side-by-side on sm+ */}
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-5">
+
+                {/* Left column: days + hours */}
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-2 block">Available Days *</label>
@@ -275,7 +295,7 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                           <button
                             key={d} type="button"
                             onClick={() => toggleArr("daysAvailable", full)}
-                            className={`w-10 h-10 rounded-lg text-xs font-bold border-2 transition-all ${
+                            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs font-bold border-2 transition-all ${
                               active
                                 ? "bg-teal-500 border-teal-500 text-white"
                                 : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
@@ -287,6 +307,7 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                       })}
                     </div>
                   </div>
+
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-2 block">Preferred Working Hours</label>
                     <div className="flex flex-col gap-1.5">
@@ -313,6 +334,8 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                     </div>
                   </div>
                 </div>
+
+                {/* Right column: city, employment, distance */}
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-1 block">Preferred City</label>
@@ -320,15 +343,18 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
                       {CITIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
+
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-1 block">Employment Type</label>
                     <select className={sel} value={form.employmentType} onChange={e => set("employmentType", e.target.value)}>
                       {EMP_TYPE.map(tp => <option key={tp}>{tp}</option>)}
                     </select>
                   </div>
+
                   <div>
                     <label className="text-xs font-bold text-slate-600 mb-1 block">
-                      Max Travel Distance: <span className="text-teal-600">{form.maxTravelDistance} km</span>
+                      Max Travel Distance:{" "}
+                      <span className="text-teal-600">{form.maxTravelDistance} km</span>
                     </label>
                     <input
                       type="range" min={1} max={100} step={1}
@@ -344,21 +370,22 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* CNIC Document */}
+            {/* ── CNIC Document ── */}
             <div>
               <SectionTitle>CNIC Document *</SectionTitle>
-              <label className="block border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
-                <input type="file" accept="image/*" className="hidden" onChange={e => setCnicFront(e.target.files[0])} />
+              <label className="block border-2 border-dashed border-slate-200 rounded-2xl p-5 sm:p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={e => setCnicFront(e.target.files[0])} />
                 {cnicFront ? (
                   <div className="flex flex-col items-center gap-2">
-                    <CheckCircle size={32} className="text-teal-500" />
-                    <p className="text-sm font-semibold text-teal-600">{cnicFront.name}</p>
-                    <p className="text-xs text-slate-400">Click to change</p>
+                    <CheckCircle size={28} className="text-teal-500" />
+                    <p className="text-sm font-semibold text-teal-600 break-all">{cnicFront.name}</p>
+                    <p className="text-xs text-slate-400">Tap to change</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
-                    <Upload size={28} className="text-slate-300" />
-                    <p className="text-sm font-bold text-teal-600">Click to upload CNIC front image</p>
+                    <Upload size={26} className="text-slate-300" />
+                    <p className="text-sm font-bold text-teal-600">Tap to upload CNIC front image</p>
                     <p className="text-xs text-slate-400">JPG, PNG or WEBP</p>
                   </div>
                 )}
@@ -367,7 +394,7 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
           </div>
 
           {/* Footer */}
-          <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
+          <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
             <button
               type="button" onClick={onClose}
               className="flex-1 border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm hover:bg-slate-100 transition-all"
@@ -380,7 +407,7 @@ export default function AdminCreateWorker({ onClose, onSuccess }) {
             >
               {loading
                 ? "Creating…"
-                : <><CheckCircle size={16} /> Create & Verify Worker</>
+                : <><CheckCircle size={16} /> Create & Verify</>
               }
             </button>
           </div>

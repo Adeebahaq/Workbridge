@@ -16,8 +16,7 @@ function groupByDay(notifications) {
     if (!groups[label]) groups[label] = [];
     groups[label].push(n);
   });
-  const keys = Object.keys(groups);
-  return keys.map(k => ({ label: k, items: groups[k] }));
+  return Object.keys(groups).map(k => ({ label: k, items: groups[k] }));
 }
 
 export default function EmployerNotifications() {
@@ -39,19 +38,23 @@ export default function EmployerNotifications() {
   );
 
   return (
-    <div style={{ maxWidth: "680px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "680px", margin: "0 auto", padding: "16px 12px" }}>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Bell size={20} color="#0d9488" />
-          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.03em" }}>
+      {/* Header — wraps on narrow screens */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexWrap: "wrap", gap: "8px", marginBottom: "16px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+          <Bell size={20} color="#0d9488" style={{ flexShrink: 0 }} />
+          <h1 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.03em", whiteSpace: "nowrap" }}>
             Notifications
           </h1>
           {unreadCount > 0 && (
             <span style={{
               background: "#0d9488", color: "white", fontSize: "11px",
               fontWeight: "700", padding: "2px 8px", borderRadius: "99px",
+              whiteSpace: "nowrap", flexShrink: 0
             }}>
               {unreadCount} new
             </span>
@@ -65,6 +68,7 @@ export default function EmployerNotifications() {
               background: "none", border: "1px solid #e2e8f0",
               color: "#475569", fontSize: "12px", fontWeight: "600",
               padding: "6px 12px", borderRadius: "8px", cursor: "pointer",
+              whiteSpace: "nowrap", flexShrink: 0
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
@@ -79,7 +83,7 @@ export default function EmployerNotifications() {
       {notifications.length === 0 && (
         <div style={{
           background: "white", borderRadius: "16px", border: "1px solid #f1f5f9",
-          padding: "60px 20px", textAlign: "center",
+          padding: "48px 16px", textAlign: "center",
         }}>
           <Inbox size={36} color="#cbd5e1" style={{ margin: "0 auto 12px" }} />
           <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#94a3b8" }}>All caught up</p>

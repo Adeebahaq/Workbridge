@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }) {
 
       <main className="flex-1 overflow-y-auto">
         {/* Top bar */}
-        <div dir="ltr" className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
+        <div dir="ltr" className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 md:px-6 sticky top-0 z-10">
           <span className="text-sm font-bold text-slate-400">WorkBridge</span>
 
           <div className="flex items-center gap-3">
@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        <div className="p-6" dir="auto">
+        <div className="p-3 md:p-6" dir="auto">
           {children}
         </div>
       </main>

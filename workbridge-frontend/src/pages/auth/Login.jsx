@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import SpeakerButton from "../../components/ui/SpeakerButton";
 import api from "../../services/api";
-import { Briefcase, AlertCircle } from "lucide-react";
+import { Briefcase, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 const ROLE_REDIRECT = {
   admin:    "/admin/dashboard",
@@ -24,6 +24,7 @@ export default function Login() {
   const [error, setError]                     = useState("");
   const [unverifiedPhone, setUnverifiedPhone] = useState("");
   const [loading, setLoading]                 = useState(false);
+  const [showPassword, setShowPassword]       = useState(false);
   const { login } = useAuth();
   const navigate  = useNavigate();
   const { t } = useTranslation();
@@ -122,15 +123,24 @@ export default function Login() {
               <label className="text-sm font-semibold text-slate-700">{t("login.password_label")}</label>
               <SpeakerButton textKey="login.password_label" />
             </div>
-            <input
-              type="password"
-              placeholder="••••••••"
-              required
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              onFocus={() => setError("")}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                required
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                onFocus={() => setError("")}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading}

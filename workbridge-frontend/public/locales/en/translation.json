@@ -336,7 +336,9 @@
     "busy": "Busy",
     "no_workers": "No verified workers yet",
     "register_to_hire": "Register to Hire",
-    "hire": "Hire"
+    "hire": "Hire",
+    "browse_more":"Browse More",
+    "show_less":"Show Less"
   }
   
 }
