@@ -132,10 +132,9 @@ export default function Chat() {
   const workerName = currentJob ? getWorkerName(currentJob) : "Worker";
 
   return (
-    <div
-      className="flex bg-slate-50 overflow-hidden fixed left-0 right-0 md:left-[230px]"
-      style={{ top: '72px', bottom: 0, height: 'calc(100dvh - 72px)' }}
-    >
+    <div className="flex overflow-hidden" style={{ height: '100svh', paddingTop: '72px' }}>
+
+      {/* Contacts Sidebar */}
       <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
@@ -174,9 +173,7 @@ export default function Chat() {
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <p className={`text-xs font-bold truncate ${isActive ? "text-teal-700" : "text-slate-700"}`}>{wname}</p>
                   <p className="text-[10px] text-slate-400 truncate">{j.hiringType} · {j.serviceId?.name || "Service"}</p>
-                  {lastMsg && (
-                    <span className="text-[10px] text-slate-400">{fmtTime(lastMsg.sentAt)}</span>
-                  )}
+                  {lastMsg && <span className="text-[10px] text-slate-400">{fmtTime(lastMsg.sentAt)}</span>}
                 </div>
               </button>
             );
@@ -192,10 +189,10 @@ export default function Chat() {
           <p className="text-sm mt-1">Choose a chat from the left to get started</p>
         </div>
       ) : (
-        <div className="w-full md:flex-1 flex flex-col min-h-0 overflow-hidden min-w-0">
+        <div className="w-full md:flex-1 flex flex-col overflow-hidden min-w-0 bg-slate-50">
 
           {/* Header */}
-          <div className="bg-white border-b border-slate-100 px-5 py-3 flex items-center gap-3 shrink-0 sticky top-0 z-10">
+          <div className="bg-white border-b border-slate-100 px-5 py-3 flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white font-black text-xs">
               {getInitials(workerName)}
             </div>
@@ -214,7 +211,7 @@ export default function Chat() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
+          <div className="flex-1 overflow-y-auto p-5 space-y-3">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <MessageSquare size={32} className="mb-2 opacity-30" />
@@ -248,7 +245,7 @@ export default function Chat() {
           </div>
 
           {/* Input Bar */}
-          <div className="bg-white border-t border-slate-100 px-3 py-3 pb-4 flex flex-col gap-2 shrink-0 w-full overflow-hidden">
+          <div className="bg-white border-t border-slate-100 px-3 py-3 flex flex-col gap-2 shrink-0 w-full">
             {audioURL && !recording && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex-wrap">
                 <Play size={14} className="text-teal-500 shrink-0" />
