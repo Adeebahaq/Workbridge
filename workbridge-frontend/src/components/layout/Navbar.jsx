@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, Menu, X, LogOut, Home, LayoutDashboard } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import logo from "../../assets/logow.png";
 export default function Navbar() {
   const [navOpen, setNavOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const menuRef = useRef(null);
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +32,6 @@ export default function Navbar() {
   const handleSectionLink = (e, id) => {
     e.preventDefault();
     closeMenu();
-
     if (pathname === "/") {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     } else {
@@ -57,11 +57,9 @@ export default function Navbar() {
     pathname.startsWith("/worker") ||
     pathname.startsWith("/employer") ||
     pathname.startsWith("/admin");
-
-  // Show section nav links when: guest OR logged-in user on home page
+    
   const showNavLinks = !user || pathname === "/";
 
-  // Show Home button on auth/register pages for guests
   const isAuthPage =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register");
@@ -75,6 +73,18 @@ export default function Navbar() {
   useEffect(() => {
     document.body.style.overflow = navOpen ? "hidden" : "";
     return () => (document.body.style.overflow = "");
+  }, [navOpen]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!navOpen) return;
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        closeMenu();
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [navOpen]);
 
   return (
@@ -98,10 +108,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop Nav */}
         <div className="hidden md:flex items-center ml-auto gap-4">
-
-          {/* Section links: show for guests AND for logged-in users on home page */}
           {showNavLinks && (
             <div className="flex gap-6 mr-4">
               {NAV_LINKS.map(({ labelKey, id }) => (
@@ -177,77 +185,86 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <div className="md:hidden flex items-center gap-2 shrink-0 ms-auto">
+        {/* Mobile: hamburger + menu wrapped in menuRef */}
+        <div ref={menuRef} className="md:hidden relative flex items-center gap-2 shrink-0 ms-auto">
           <LanguageSwitcher />
-            <button onClick={() => setNavOpen(!navOpen)} className="w-8 h-8 flex items-center justify-center shrink-0">
-              {navOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-        </div>
-      </div>
+          <button
+            onClick={() => setNavOpen(!navOpen)}
+            className="w-8 h-8 flex items-center justify-center shrink-0"
+          >
+            {navOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
 
-      {/* Mobile Menu */}
-      {navOpen && (
-        <div className="md:hidden bg-white border-t p-5 flex flex-col gap-4">
+          {/* Mobile Menu Panel */}
+          {navOpen && (
+            <div className="absolute top-full right-0 mt-2 w-56 bg-white border rounded-xl shadow-lg p-4 flex flex-col gap-4 z-50">
+              {user ? (
+                <>
+                  {pathname === "/" &&
+                    NAV_LINKS.map(({ labelKey, id }) => (
+                      <a
+                        key={id}
+                        href={`/#${id}`}
+                        onClick={(e) => handleSectionLink(e, id)}
+                        className="font-semibold text-slate-600"
+                      >
+                        {t(labelKey)}
+                      </a>
+                    ))}
 
-          {user ? (
-            <>
-              {/* Section links on home page even when logged in */}
-              {pathname === "/" &&
-                NAV_LINKS.map(({ labelKey, id }) => (
-                  <a
-                    key={id}
-                    href={`/#${id}`}
-                    onClick={(e) => handleSectionLink(e, id)}
-                    className="font-semibold text-slate-600"
-                  >
-                    {t(labelKey)}
-                  </a>
-                ))}
+                  {pathname !== "/" && (
+                    <button onClick={handleHome} className="text-left font-semibold">
+                      {t("nav.home")}
+                    </button>
+                  )}
 
-              {pathname !== "/" && (
-                <button onClick={handleHome} className="text-left font-semibold">
-                  {t("nav.home")}
-                </button>
+                  {!isInsideApp && (
+                    <Link to={getDashboardLink()} onClick={closeMenu} className="font-semibold">
+                      {t("nav.dashboard")}
+                    </Link>
+                  )}
+
+                  <button onClick={handleLogout} className="text-red-600 text-left font-semibold">
+                    {t("nav.logout")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {NAV_LINKS.map(({ labelKey, id }) => (
+                    <a
+                      key={id}
+                      href={`/#${id}`}
+                      onClick={(e) => handleSectionLink(e, id)}
+                      className="font-semibold text-slate-600"
+                    >
+                      {t(labelKey)}
+                    </a>
+                  ))}
+
+                  {isAuthPage && (
+                    <button
+                      onClick={() => { handleHome(); closeMenu(); }}
+                      className="text-left font-semibold flex items-center gap-2"
+                    >
+                      <Home className="w-4 h-4" />
+                      {t("nav.home")}
+                    </button>
+                  )}
+
+                  <Link to="/login" onClick={closeMenu} className="font-semibold">
+                    {t("nav.login")}
+                  </Link>
+
+                  <Link to="/register/employer" onClick={closeMenu} className="font-semibold">
+                    {t("nav.get_started")}
+                  </Link>
+                </>
               )}
-
-              {!isInsideApp && (
-                <Link to={getDashboardLink()} onClick={closeMenu} className="font-semibold">
-                  {t("nav.dashboard")}
-                </Link>
-              )}
-
-              <button onClick={handleLogout} className="text-red-600 text-left font-semibold">
-                {t("nav.logout")}
-              </button>
-            </>
-          ) : (
-            <>
-              {NAV_LINKS.map(({ labelKey, id }) => (
-                <a
-                  key={id}
-                  href={`/#${id}`}
-                  onClick={(e) => handleSectionLink(e, id)}
-                >
-                  {t(labelKey)}
-                </a>
-              ))}
-
-              {isAuthPage && (
-                <button onClick={() => { handleHome(); closeMenu(); }} className="text-left font-semibold flex items-center gap-2">                <Home className="w-4 h-4" />
-                  {t("nav.home")}
-                </button>
-              )}
-
-              <Link to="/login" onClick={closeMenu}>{t("nav.login")}</Link>
-
-            <Link to="/register/employer" onClick={closeMenu}>
-              {t("nav.get_started")}
-            </Link>
-            </>
+            </div>
           )}
         </div>
-      )}
+
+      </div>
     </nav>
   );
 }
