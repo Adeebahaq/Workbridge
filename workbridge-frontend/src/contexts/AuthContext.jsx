@@ -34,8 +34,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // ✅ sessionStorage is per-tab — stores which token this tab is using
-    const token = sessionStorage.getItem("wb_token");
-
+    const token = localStorage.getItem("wb_token");
     if (!token) { setLoading(false); return; }
 
     const payload = decodeToken(token);
