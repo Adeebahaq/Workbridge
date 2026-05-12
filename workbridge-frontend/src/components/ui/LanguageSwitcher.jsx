@@ -31,7 +31,7 @@ export default function LanguageSwitcher({ className = "" }) {
           : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
         } ${className}`}
     >
-      <span className="text-base leading-none">{isUrdu ? "🇵🇰" : "🇬🇧"}</span>
+      
       <span>{t("lang_switcher.label")}</span>
     </button>
   );
