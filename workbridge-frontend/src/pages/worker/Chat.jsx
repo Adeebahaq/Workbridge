@@ -59,7 +59,7 @@ export default function WorkerChat() {
   const currentJob   = chatJobs.find((j) => j._id === activeJob);
   // ✅ FIX 2: derive employerId from currentJob consistently
   const employerId   = currentJob?.employerId?._id || currentJob?.employerId;
-  const currentUserId = String(user?.userId || user?._id);
+  const currentUserId = String(user?.userId || user?.id || user?._id || "");
 
   const { messages, send, markRead, sendVoice } = useChat(
     employerId ? String(employerId) : "",
@@ -281,7 +281,9 @@ const blob = new Blob(chunksRef.current, { type: mimeType });
             )}
 
             {messages.map((m, i) => {
-              const isMine = String(m.senderId) === currentUserId;
+              const isMine = 
+  String(m.senderId) === currentUserId || 
+  String(m.senderId?._id) === currentUserId;
               return (
                 <div key={i} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   {!isMine && (
