@@ -60,14 +60,12 @@ export default function Chat() {
       .forEach(m => markRead(m._id));
   }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Text send ───────────────────────────────────────────────────────────
   const handleSend = () => {
     if (!text.trim() || !workerId) return;
     send(String(workerId), text.trim());
     setText("");
   };
 
-  // ─── Voice recording ─────────────────────────────────────────────────────
   const startRecording = async () => {
     try {
       const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -124,7 +122,6 @@ export default function Chat() {
     } catch (err) { console.error("Voice upload failed:", err); }
   };
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
   const getWorkerName = (job) => {
     const name = job.workerId?.fullName || job.workerId;
     return typeof name === "string" ? name : "Worker";
@@ -134,9 +131,12 @@ export default function Chat() {
 
   const workerName = currentJob ? getWorkerName(currentJob) : "Worker";
 
-  // ─── Render ──────────────────────────────────────────────────────────────
   return (
-<div className="flex h-[calc(100vh-72px)] bg-slate-50 overflow-hidden fixed bottom-0 top-[72px] left-0 right-0 md:left-[230px]">    <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
+    <div
+      className="flex bg-slate-50 overflow-hidden fixed left-0 right-0 md:left-[230px]"
+      style={{ top: '72px', bottom: 0, height: 'calc(100dvh - 72px)' }}
+    >
+      <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
             <MessageSquare size={14} className="text-teal-500" />
@@ -171,13 +171,13 @@ export default function Chat() {
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                 </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <p className={`text-xs font-bold truncate ${isActive ? "text-teal-700" : "text-slate-700"}`}>{wname}</p>
-                <p className="text-[10px] text-slate-400 truncate">{j.hiringType} · {j.serviceId?.name || "Service"}</p>
-                {lastMsg && (
-                  <span className="text-[10px] text-slate-400">{fmtTime(lastMsg.sentAt)}</span>
-                )}
-              </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className={`text-xs font-bold truncate ${isActive ? "text-teal-700" : "text-slate-700"}`}>{wname}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{j.hiringType} · {j.serviceId?.name || "Service"}</p>
+                  {lastMsg && (
+                    <span className="text-[10px] text-slate-400">{fmtTime(lastMsg.sentAt)}</span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -203,14 +203,14 @@ export default function Chat() {
               <p className="font-black text-slate-800 text-sm">{workerName}</p>
               <p className="text-[10px] text-emerald-500 font-bold">● ONLINE</p>
             </div>
-              <div className="ml-auto flex items-center gap-2">
-                <button
-                  onClick={() => setActiveJob(null)}
-                  className="md:hidden text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all"
-                >
-                  <ArrowLeft size={12} /> CHATS
-                </button>
-              </div>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => setActiveJob(null)}
+                className="md:hidden text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all"
+              >
+                <ArrowLeft size={12} /> CHATS
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -235,8 +235,7 @@ export default function Chat() {
                     ${isMine ? "bg-[#0F172A] text-white rounded-br-sm" : "bg-white shadow-sm text-slate-800 border border-slate-100 rounded-bl-sm"}`}>
                     {m.audioUrl
                       ? <audio controls src={m.audioUrl} className="max-w-[200px] h-8" />
-                      : m.text
-                    }
+                      : m.text}
                     <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1 whitespace-nowrap">
                       {fmtTime(m.sentAt)}
                       {isMine && (m.isRead ? <CheckCheck size={11} /> : <Check size={11} />)}
@@ -249,23 +248,21 @@ export default function Chat() {
           </div>
 
           {/* Input Bar */}
-<div className="bg-white border-t border-slate-100 px-3 py-3 pb-4 flex flex-col gap-2 shrink-0 w-full overflow-hidden">            {audioURL && !recording && (
+          <div className="bg-white border-t border-slate-100 px-3 py-3 pb-4 flex flex-col gap-2 shrink-0 w-full overflow-hidden">
+            {audioURL && !recording && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex-wrap">
                 <Play size={14} className="text-teal-500 shrink-0" />
                 <audio controls src={audioURL} className="flex-1 h-7" />
                 <button onClick={discardRecording} className="text-slate-400 hover:text-red-500 transition-colors">
                   <Trash2 size={14} />
                 </button>
-                <button
-                  onClick={sendVoiceMessage}
-                  className="bg-teal-500 hover:bg-teal-400 text-white text-xs font-bold px-3 py-1 rounded-lg transition-all"
-                >
+                <button onClick={sendVoiceMessage} className="bg-teal-500 hover:bg-teal-400 text-white text-xs font-bold px-3 py-1 rounded-lg transition-all">
                   Send
                 </button>
               </div>
             )}
-<div className="flex gap-2 items-center md:ml-0 ml-16">
-     <input
+            <div className="flex gap-2 items-center md:ml-0 ml-16">
+              <input
                 className="flex-1 w-0 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
                 placeholder={recording ? "Recording…" : "Type your message here..."}
                 maxLength={500}
