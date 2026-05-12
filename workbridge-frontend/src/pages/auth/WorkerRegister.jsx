@@ -737,7 +737,7 @@ export default function WorkerRegister() {
             </form>
           )}
 
-          {/* ── STEP 4: OTP ── */}
+   {/* ── STEP 4: OTP ── */}
           {step === 4 && (
             <form onSubmit={verifyOtp}>
               <div className="text-center mb-7">
@@ -785,6 +785,15 @@ export default function WorkerRegister() {
                 {t("worker_register.have_account")}{" "}
                 <a href="/login" className="text-teal-600 font-bold hover:underline">{t("worker_register.sign_in")}</a>
               </p>
+              <div className="flex justify-center mt-4">
+                <button
+                  type="button"
+                  onClick={back}
+                  className="flex items-center gap-2 border border-slate-200 text-slate-600 font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-all"
+                >
+                  <ArrowLeft size={15} /> {t("worker_register.back")}
+                </button>
+              </div>
             </form>
           )}
         </div>
