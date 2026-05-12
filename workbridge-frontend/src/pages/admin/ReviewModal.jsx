@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Phone, MapPin, XCircle, CheckCircle2, AlertTriangle, FileText, Lock, LockOpen, Undo2, Loader2 } from "lucide-react";
-import { STATUS_META, fmt } from "./Dashboard";
-
+import { STATUS_META, fmt, initials } from "./Dashboard";
 function ReviewModal({ worker, onClose, onAction }) {
   const [rejectReason, setRejectReason] = useState("");
   const [activeTab, setActiveTab] = useState("info");
@@ -25,7 +24,8 @@ function ReviewModal({ worker, onClose, onAction }) {
   const rejectReady = charCount >= 20;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 pt-20"
+    onClick={onClose}>
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col"
         style={{ maxHeight: "90vh" }}

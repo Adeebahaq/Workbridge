@@ -71,8 +71,8 @@ export default function AppRoutes() {
       <Route path="/employer/chat/:jobId"   element={<PrivateRoute role="employer"><Chat /></PrivateRoute>} />
       <Route path="/employer/notifications" element={<PrivateRoute role="employer"><EmployerNotifications /></PrivateRoute>} />
 
-      <Route path="/employer/messages" element={<Navigate to="/employer/chat" replace />} />
-
+<Route path="/employer/dashboard" element={<PrivateRoute role="employer"><EmployerDashboard /></PrivateRoute>} />
+<Route path="/employer/messages" element={<Navigate to="/employer/chat" replace />} />
       {/* Admin */}
       <Route path="/admin/dashboard" element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
 
