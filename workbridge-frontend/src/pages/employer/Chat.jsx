@@ -136,8 +136,7 @@ export default function Chat() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
-<div className="flex h-[calc(100vh-56px)] bg-slate-50 overflow-hidden fixed bottom-0 top-[56px] left-0 right-0 md:left-[230px]">
-    <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
+<div className="flex h-[calc(100vh-72px)] bg-slate-50 overflow-hidden fixed bottom-0 top-[72px] left-0 right-0 md:left-[230px]">    <div className={`${activeJob ? "hidden md:flex" : "flex"} w-full md:w-64 shrink-0 bg-white border-r border-slate-100 flex-col`}>
         <div className="p-4 border-b border-slate-100">
           <h2 className="font-black text-slate-800 text-sm flex items-center gap-2">
             <MessageSquare size={14} className="text-teal-500" />
@@ -250,8 +249,7 @@ export default function Chat() {
           </div>
 
           {/* Input Bar */}
-          <div className="bg-white border-t border-slate-100 px-3 py-3 flex flex-col gap-2 shrink-0 w-full overflow-hidden">
-            {audioURL && !recording && (
+<div className="bg-white border-t border-slate-100 px-3 py-3 pb-4 flex flex-col gap-2 shrink-0 w-full overflow-hidden">            {audioURL && !recording && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex-wrap">
                 <Play size={14} className="text-teal-500 shrink-0" />
                 <audio controls src={audioURL} className="flex-1 h-7" />
@@ -266,8 +264,8 @@ export default function Chat() {
                 </button>
               </div>
             )}
-            <div className="flex gap-2 items-center">
-              <input
+<div className="flex gap-2 items-center md:ml-0 ml-16">
+     <input
                 className="flex-1 w-0 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
                 placeholder={recording ? "Recording…" : "Type your message here..."}
                 maxLength={500}

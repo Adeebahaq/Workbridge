@@ -18,6 +18,7 @@ import {
   Users,
   BarChart2,
   LogOut,
+  X,
 } from "lucide-react";
 
 function initials(name = "") {
@@ -91,11 +92,11 @@ const { unreadCount = 0 } = useNotifications() ?? {};
     <>
       {/* Mobile toggle button */}
       <button
-        className="md:hidden fixed bottom-6 left-4 z-50 bg-teal-500 text-white p-3 rounded-full shadow-lg"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        <LayoutGrid size={20} />
-      </button>
+  className="md:hidden fixed bottom-6 left-4 z-50 bg-teal-500 text-white p-3 rounded-full shadow-lg"
+  onClick={() => setMobileOpen(!mobileOpen)}
+>
+  {mobileOpen ? <X size={20} /> : <LayoutGrid size={20} />}
+</button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
